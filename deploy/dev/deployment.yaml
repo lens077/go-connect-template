@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-user-deploy
+  labels:
+    app: ecommerce-user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce-user
+  template:
+    metadata:
+      name: ecommerce-user
+      labels:
+        app: ecommerce-user
+    spec:
+      containers:
+        - name: ecommerce-user
+          image: ccr.ccs.tencentyun.com/sumery/user:dev
+          imagePullPolicy: Always
+          env:
+            - name: CONSUL_ENABLED
+              value: "true"
+            - name: CONSUL_ADDR
+              value: "consul-server.consul.svc:8501"
+            - name: CONSUL_PATH
+              value: "ecommerce/user/pre.yaml"
+            - name: CONSUL_SCHEME
+              value: "https"
+            - name: CONSUL_INSECURE_SKIP_VERIFY
+              value: "true"
+          ports:
+            - containerPort: 30001
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+#          envFrom:
+#            - configMapRef:
+#                name: ecommerce-user-config
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 30001
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 30001
+      restartPolicy: Always
+      

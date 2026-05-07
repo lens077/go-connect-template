@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-user-deploy
+  labels:
+    app: ecommerce-user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce-user
+  template:
+    metadata:
+      name: ecommerce-user
+      labels:
+        app: ecommerce-user
+    spec:
+      containers:
+        - name: ecommerce-user
+          image: harbor.apikv.com:5443/ecommerce/user:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 30001
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: ecommerce-user-config
+      restartPolicy: Always
+      

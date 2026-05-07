@@ -1,0 +1,33 @@
+dev:
+  connect-example-go:
+    metadata:
+      annotations:
+        fluxcd.io/ignore: "true"
+      labels:
+        custom.label/dev: "true"
+#    image: okteto/golang:1
+    image: ccr.ccs.tencentyun.com/sumery/golang:1.25.8
+    command: bash
+    workdir: /build
+    forward:
+      - 4000:4001
+    sync:
+      - .:/build
+#    volumes:
+#      - /go
+    timeout: 40s
+    securityContext:
+      capabilities:
+        add:
+          - SYS_PTRACE
+
+#build:
+#  connect-example-go:
+#    context: .
+#
+#deploy:
+#  - name: Helm Install
+#    command: |
+#      helm upgrade --install connect-example ./helm \
+#      --set go.image.repository=${OKTETO_BUILD_CONNECT_EXAMPLE_GO_REGISTRY} \
+#      --set go.image.tag=test1

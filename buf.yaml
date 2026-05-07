@@ -1,0 +1,21 @@
+# For details on buf.yaml configuration, visit https://buf.build/docs/configuration/v2/buf-yaml
+version: v2
+lint:
+  use:
+    - STANDARD
+  except:
+    - FIELD_NOT_REQUIRED
+    - PACKAGE_NO_IMPORT_CYCLE
+  disallow_comment_ignores: true
+  ignore:
+    - internal/conf
+#deps: # 依赖的proto库
+#  - buf.build/googleapis/googleapis
+#  - buf.build/grpc-ecosystem/grpc-gateway
+#  - buf.build/bufbuild/protovalidate
+breaking:
+  use:
+    - FILE
+  except:
+    - EXTENSION_NO_DELETE
+    - FIELD_SAME_DEFAULT

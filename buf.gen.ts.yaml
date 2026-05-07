@@ -1,0 +1,29 @@
+version: v2
+
+managed:
+  enabled: true
+  disable:
+    - module: buf.build/googleapis/googleapis
+      file_option: go_package_prefix # 禁用对 googleapis 模块的 go_package 重写
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+#    - file_option: go_package
+#      module: buf.build/grpc-ecosystem/grpc-gateway
+#  override:
+#    - file_option: go_package_prefix
+#      value: connect-go-example/greet
+plugins:
+  # This will invoke protoc-gen-es and write output to src/gen
+  - local: protoc-gen-es
+    out: .
+    # Also generate any imported dependencies
+    include_imports: true
+    # Add more plugin options here
+    opt: target=ts
+
+inputs:
+  # 引用当前模块（或工作区根目录）
+  - directory: .
+    # 使用 exclude_paths 排除不需要生成 TS 的目录
+    exclude_paths:
+      - internal/conf/v1

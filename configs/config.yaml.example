@@ -1,0 +1,96 @@
+server:
+  addr: "0.0.0.0:30001"
+  timeout: 10
+  cors:
+    allowed_origins:
+      - http://localhost:3000
+
+data:
+  database:
+    postgres:
+      host: localhost
+      port: 5432
+      user: user
+      password: password
+      db_name: postgres
+      tls:
+        enable: true
+        ssl_mode: "verify-full"
+        ca_pem: ""
+      timezone: "Asia/Shanghai"
+      pool:
+        max_conns: 20
+        min_conns: 5
+        max_conn_lifetime: 3600
+        max_conn_idle_time: 300
+  cache:
+    redis:
+      host: localhost
+      port: 443
+      tls:
+        enable: true
+        insecure_skip_verify: true
+        ca_pem: ""
+      username: username
+      password: password
+      db: 0
+      dial_timeout: 5
+      read_timeout: 3
+      write_timeout: 3
+      pool_size: 10
+      min_idle_conns: 5
+
+observability:
+  enable: false
+  trace:
+    endpoint: localhost:4317
+    tls:
+      enable: false
+      insecure_skip_verify: true
+      ca_pem: ""
+  metric:
+    endpoint: localhost:4317
+    tls:
+      enable: false
+      insecure_skip_verify: true
+      ca_pem: ""
+  log:
+    endpoint: localhost:4318
+    tls:
+      enable: false
+      insecure_skip_verify: true
+      ca_pem: ""
+
+discovery:
+  consul:
+    addr: localhost:8500
+    health_check: true
+    scheme: http
+    ttl:
+      # Consul Agent 期望的心跳时间间隔
+      duration: "30s"
+      # 单位: 毫秒
+      ping_interval: 1000000000
+    tls:
+      enable: false
+      insecure_skip_verify: true
+      ca_pem: ""
+search:
+  elastic_search:
+    addresses:
+      - http://localhost:8200
+    username: elastic
+    password: password
+
+log:
+  level: debug
+  format: console
+
+auth:
+  casdoor:
+    endpoint: "http://localhost:8000"
+    client_id: "client_id"
+    client_secret: "client_secret"
+    organization_name: "organization_name"
+    application_name: "application_name"
+    certificate: ""
