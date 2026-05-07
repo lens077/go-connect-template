@@ -1,16 +1,8 @@
-### local
+### healthz check
 POST http://localhost:30001/healthz
 Content-Type: application/json
 
-### pre
-#  --header 'Content-Type: application/json'
-#  --data-raw '{}'
-POST http://192.168.3.124:30001/healthz
-Content-Type: application/json
-
-### curl -v -X POST http://my.app.com/check.v1.CheckService/Ready
-#  --header 'Content-Type: application/json'
-#  --data-raw '{}'
+### request example
 POST http://localhost:30001/user.v1.UserService/SignIn
 Content-Type: application/json
 
@@ -18,28 +10,3 @@ Content-Type: application/json
   "code": "1231",
   "state": "12313"
 }
-
-### Gateway GetUserProfile
-# curl -v -X POST http://localhost:8080/user.v1.UserService/UserProfile \
-# --header 'Content-Type: application/json' \ \
-# --header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImVjb21tZXJjZSIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsiMDI5MWFiMjFmNTZmZmE2NWY5ODQiXSwiYXZhdGFyIjoiaHR0cHM6Ly9jZG4uY2FzYmluLm9yZy9pbWcvY2FzYmluLnN2ZyIsImF6cCI6IjAyOTFhYjIxZjU2ZmZhNjVmOTg0IiwiZGlzcGxheU5hbWUiOiJ0ZXN0IiwiZW1haWwiOiJ4aWNvbnlAcXEuY29tIiwiZXhwIjoxNzY1OTUyNjc3LCJpYXQiOjE3NjU5NDkwNzcsImlkIjoiZTMzZTEyYmEtZmIyNS00ZmI1LWFhNGMtOTNmZWUyN2IxODQxIiwiaXNzIjoiaHR0cHM6Ly9hcGlrdi5jb206ODA4MSIsImp0aSI6ImFkbWluLzQ1Y2RmNmExLTUxYTItNDJhMi04MDFmLTM1MjI1NWY1NGI1NiIsIm5hbWUiOiJ0ZXN0IiwibmJmIjoxNzY1OTQ5MDc3LCJzdWIiOiJlMzNlMTJiYS1mYjI1LTRmYjUtYWE0Yy05M2ZlZTI3YjE4NDEiLCJ0YWciOiIiLCJ0b2tlblR5cGUiOiJhY2Nlc3MtdG9rZW4ifQ.uI2JOg2efTKUojBp5TbAPCDd27d08R66uLubOy084tDllPCp21me36gVrtdJJ5KKPQlsEd8vqxBK8gBUsy9vJOTeFjqm0GtwiGqsxemJc1rYV7-25rIeiiDz0JUnKEN0GMa6rmXesiWbM02pIC4WRnXisv1s8wPkYgvag_CJo8-RxjuwC54JQfcbt2u33TWKBUvlwNUlx7_jLDfrhMZmmyabCAFcVKOZkQBh2fbqjP4uIiVOM_oBvqF9tapRDq0ZWtI136LiZmqtDBzubTfC2X1QvHQNE6J_w93-LLpX1i-yooC7oXBNNNSh4379U_ZjcbFJYENd1-Ie_fUL6KJrmrC20SJK2Pby78NMYkaOpHNYSGzxKi25ULlbBEdmNTsHsQKPlLM3O3zWTWC04WZ2uXlEwD5j7nHJbiMuXqBeudvIFo_RMTwrJyU_u2FeHrHGmMxcFxERwOKO8vC-4u0JxUTL7BghgcJPg776wU4VJ5ayMVGTQIEOhVONlGZg3wzqJHPZ1WPkYncweZrD6LTlP3L-YarO2mLoa6r6fS5s2UtTIQXEri-zhzqegDEeGgPVIWlVs4PEK-xnH3JluWMUCNCd-AykD11YRqI_iwYqFOSjQpm2WLywGYiL7YVYufqfxsUEXzXRphHR1Q9mXb8IET0n4aTY_F0rtlf2sd9QucU' \
-# --data-raw '{}'
-
-POST http://localhost:8080/user/v1.UserService/UserProfile
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImVjb21tZXJjZSIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsiMDI5MWFiMjFmNTZmZmE2NWY5ODQiXSwiYXZhdGFyIjoiaHR0cHM6Ly9jZG4uY2FzYmluLm9yZy9pbWcvY2FzYmluLnN2ZyIsImF6cCI6IjAyOTFhYjIxZjU2ZmZhNjVmOTg0IiwiZGlzcGxheU5hbWUiOiJ0ZXN0IiwiZW1haWwiOiJ4aWNvbnlAcXEuY29tIiwiZXhwIjoxNzY1OTUyNjc3LCJpYXQiOjE3NjU5NDkwNzcsImlkIjoiZTMzZTEyYmEtZmIyNS00ZmI1LWFhNGMtOTNmZWUyN2IxODQxIiwiaXNzIjoiaHR0cHM6Ly9hcGlrdi5jb206ODA4MSIsImp0aSI6ImFkbWluLzQ1Y2RmNmExLTUxYTItNDJhMi04MDFmLTM1MjI1NWY1NGI1NiIsIm5hbWUiOiJ0ZXN0IiwibmJmIjoxNzY1OTQ5MDc3LCJzdWIiOiJlMzNlMTJiYS1mYjI1LTRmYjUtYWE0Yy05M2ZlZTI3YjE4NDEiLCJ0YWciOiIiLCJ0b2tlblR5cGUiOiJhY2Nlc3MtdG9rZW4ifQ.uI2JOg2efTKUojBp5TbAPCDd27d08R66uLubOy084tDllPCp21me36gVrtdJJ5KKPQlsEd8vqxBK8gBUsy9vJOTeFjqm0GtwiGqsxemJc1rYV7-25rIeiiDz0JUnKEN0GMa6rmXesiWbM02pIC4WRnXisv1s8wPkYgvag_CJo8-RxjuwC54JQfcbt2u33TWKBUvlwNUlx7_jLDfrhMZmmyabCAFcVKOZkQBh2fbqjP4uIiVOM_oBvqF9tapRDq0ZWtI136LiZmqtDBzubTfC2X1QvHQNE6J_w93-LLpX1i-yooC7oXBNNNSh4379U_ZjcbFJYENd1-Ie_fUL6KJrmrC20SJK2Pby78NMYkaOpHNYSGzxKi25ULlbBEdmNTsHsQKPlLM3O3zWTWC04WZ2uXlEwD5j7nHJbiMuXqBeudvIFo_RMTwrJyU_u2FeHrHGmMxcFxERwOKO8vC-4u0JxUTL7BghgcJPg776wU4VJ5ayMVGTQIEOhVONlGZg3wzqJHPZ1WPkYncweZrD6LTlP3L-YarO2mLoa6r6fS5s2UtTIQXEri-zhzqegDEeGgPVIWlVs4PEK-xnH3JluWMUCNCd-AykD11YRqI_iwYqFOSjQpm2WLywGYiL7YVYufqfxsUEXzXRphHR1Q9mXb8IET0n4aTY_F0rtlf2sd9QucU
-
-{}
-
-### GetUserProfile
-# curl -v -X POST http://localhost:30001/v1.UserService/UserProfile
-#--header 'Content-Type: application/json'
-#--header 'x-md-global-name: test'
-#--data-raw '{}'
-POST http://localhost:30001/v1.UserService/UserProfile
-x-md-global-name: test
-Content-Type: application/json
-
-{}
-
-###
