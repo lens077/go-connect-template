@@ -9,9 +9,9 @@ import (
 	"connectrpc.com/connect"
 	connectcors "connectrpc.com/cors"
 	"connectrpc.com/validate"
-	"github.com/lens077/go-connect-template/api/user/v1/userv1connect"
 	conf "github.com/lens077/go-connect-template/internal/conf/v1"
 	"github.com/lens077/go-connect-template/internal/data"
+	"github.com/lens077/go-connect-template/internal/service"
 	"github.com/rs/cors"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -29,7 +29,7 @@ var Module = fx.Module("server",
 func NewHTTPServer(
 	lc fx.Lifecycle,
 	cfg *conf.Bootstrap,
-	userv1Service userv1connect.UserServiceHandler,
+	service service.Service,
 	logger *zap.Logger,
 	connectOptions []connect.HandlerOption,
 	deps *data.Data, // 基础设施依赖
@@ -47,12 +47,7 @@ func NewHTTPServer(
 	)
 
 	// 注册 Connect 业务处理器
-	// 直接展开 (Variadic) 传入所有的拦截器
-	userv1connectPath, userv1connectHandler := userv1connect.NewUserServiceHandler(
-		userv1Service,
-		combinedOptions...,
-	)
-	mux.Handle(userv1connectPath, userv1connectHandler)
+	service.RegisterHandlers(mux, combinedOptions...)
 
 	// 应用本身的健康检查
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {

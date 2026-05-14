@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -118,6 +119,13 @@ func NewConsulRegistry(addr, ID, Name string, opts ...Option) (*ConsulRegistry, 
 	config := api.Config{
 		Address: addr,
 		Scheme:  o.scheme,
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: 5 * time.Second, // 建立连接超时
+			}).DialContext,
+			TLSHandshakeTimeout: 5 * time.Second, // TLS 握手超时
+		},
+		WaitTime: 10 * time.Second,
 	}
 
 	if o.tlsConf != nil {

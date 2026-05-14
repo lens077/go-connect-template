@@ -70,7 +70,7 @@ discovery:
       # Consul Agent 期望的心跳时间间隔
       duration: "30s"
       # 单位: 毫秒
-      ping_interval: 1000000000
+      ping_interval_seconds: 1
     tls:
       enable: false
       insecure_skip_verify: true
@@ -85,6 +85,9 @@ search:
 log:
   level: debug
   format: console
+  es_log:
+    enable_request_log: true
+    enable_response_log: true
 
 auth:
   casdoor:

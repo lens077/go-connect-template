@@ -66,7 +66,7 @@ func WithTraceTLS(insecureSkipVerify bool, caPem []byte) TraceOption {
 
 		if !insecureSkipVerify && len(caPem) > 0 {
 			caCertPool := x509.NewCertPool()
-			if ok := caCertPool.AppendCertsFromPEM(caPem); !ok {
+			if ok := caCertPool.AppendCertsFromPEM(caPem); ok {
 				tlsConf.RootCAs = caCertPool
 			} else {
 				o.logger.Error("failed to append ca cert")

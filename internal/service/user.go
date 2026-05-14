@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/lens077/go-connect-template/internal/biz"
 
@@ -12,18 +13,22 @@ import (
 	"connectrpc.com/connect"
 )
 
-// UserService 实现 Connect 服务
 type UserService struct {
 	uc *biz.UserUseCase
 }
 
-// 显式接口检查
 var _ userv1connect.UserServiceHandler = (*UserService)(nil)
+var _ Service = (*UserService)(nil)
 
-func NewUserService(uc *biz.UserUseCase) userv1connect.UserServiceHandler {
+func NewUserService(uc *biz.UserUseCase) *UserService {
 	return &UserService{
 		uc: uc,
 	}
+}
+
+func (s *UserService) RegisterHandlers(mux *http.ServeMux, options ...connect.HandlerOption) {
+	path, handler := userv1connect.NewUserServiceHandler(s, options...)
+	mux.Handle(path, handler)
 }
 
 func (s *UserService) SignIn(ctx context.Context, c *connect.Request[v1.SignInRequest]) (*connect.Response[v1.SignInResponse], error) {
@@ -34,7 +39,7 @@ func (s *UserService) SignIn(ctx context.Context, c *connect.Request[v1.SignInRe
 			State: c.Msg.State,
 		},
 	)
-	if err != nil { // 根据业务错误类型映射状态码
+	if err != nil {
 		switch {
 		case errors.Is(err, biz.ErrUserAlreadyExists):
 			return nil, connect.NewError(connect.CodeAlreadyExists, err)
@@ -43,7 +48,6 @@ func (s *UserService) SignIn(ctx context.Context, c *connect.Request[v1.SignInRe
 		case errors.Is(err, biz.ErrUserNotFound):
 			return nil, connect.NewError(connect.CodeNotFound, err)
 		default:
-			// 可以在这里包装一个具体的 Unknown 描述，或者直接返回
 			return nil, connect.NewError(connect.CodeUnknown, err)
 		}
 	}

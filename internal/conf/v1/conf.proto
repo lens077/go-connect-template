@@ -33,6 +33,11 @@ message Bootstrap {
 message Log {
   string level = 1;
   string format = 2;
+  ESLog es_log = 3;
+  message ESLog {
+    bool enable_request_log = 1;
+    bool enable_response_log = 2;
+  }
 }
 
 message Server {
@@ -151,7 +156,7 @@ message Discovery {
     }
     message Ttl {
       string duration = 1;
-      uint64 ping_interval = 2;
+      uint64 ping_interval_seconds = 2;
     }
   }
   Consul consul = 1;
@@ -162,6 +167,12 @@ message Search {
     repeated string addresses = 1;
     string username = 2;
     string password = 3;
+    Tls tls = 4;
+    message Tls {
+      bool enable = 1;
+      bool insecure_skip_verify = 2;
+      string ca_pem = 3;
+    }
   }
   ElasticSearch elastic_search = 1;
 }
