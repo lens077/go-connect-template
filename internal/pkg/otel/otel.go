@@ -60,6 +60,92 @@ type logOptions struct {
 	tls      otlploghttp.Option
 }
 
+// SetupOTelSDK bootstraps the OpenTelemetry pipeline.
+func SetupOTelSDK(ctx context.Context, info meta.AppInfo, cfg *confv1.Observability, logger *zap.Logger) (func(context.Context) error, error) {
+	if cfg == nil || !cfg.Enable {
+		logger.Info("Observability is disabled, skipping OpenTelemetry setup")
+		return func(ctx context.Context) error { return nil }, nil
+	}
+
+	// 存储所有子组件停止方法的切片
+	var shutdownFuncs []func(context.Context) error
+	var err error
+
+	// 返回给外部的关闭otel
+	shutdown := func(ctx context.Context) error {
+		var err error
+		for _, fn := range shutdownFuncs {
+			err = errors.Join(err, fn(ctx)) // 合并所有组件的错误
+		}
+		shutdownFuncs = nil
+		return err
+	}
+
+	handleErr := func(inErr error) {
+		err = errors.Join(inErr, shutdown(ctx))
+	}
+
+	prop := newPropagator()
+	otel.SetTextMapPropagator(prop)
+
+	res, err := newResource(info)
+	if err != nil {
+		handleErr(err)
+		return shutdown, err
+	}
+
+	var traceTlsOpt otlptracehttp.Option
+	var metricTlsOpt otlpmetrichttp.Option
+	var logTlsOpt otlploghttp.Option
+	if cfg.Trace.Tls.Enable {
+		tOpts := &traceOptions{logger: logger}
+		// 假设从配置文件读取 CA 内容或跳过验证
+		WithTraceTLS(cfg.Trace.Tls.InsecureSkipVerify, []byte(cfg.Trace.Tls.CaPem))(tOpts)
+		traceTlsOpt = tOpts.tls
+	}
+
+	if cfg.Metric.Tls.Enable {
+		tOpts := &metricOptions{logger: logger}
+		// 假设从配置文件读取 CA 内容或跳过验证
+		WithMetricTLS(cfg.Metric.Tls.InsecureSkipVerify, []byte(cfg.Metric.Tls.CaPem))(tOpts)
+		metricTlsOpt = tOpts.tls
+	}
+
+	if cfg.Log.Tls.Enable {
+		tOpts := &logOptions{logger: logger}
+		// 假设从配置文件读取 CA 内容或跳过验证
+		WithLogTLS(cfg.Log.Tls.InsecureSkipVerify, []byte(cfg.Log.Tls.CaPem))(tOpts)
+		logTlsOpt = tOpts.tls
+	}
+
+	// 注入Trace
+	tracerProvider, err := newTracerProvider(res, cfg.Trace.Endpoint, traceTlsOpt)
+	if err != nil {
+		handleErr(err)
+		return shutdown, err
+	}
+	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
+	otel.SetTracerProvider(tracerProvider)
+
+	metricProvider, err := newMeterProvider(res, cfg.Metric.Endpoint, metricTlsOpt)
+	if err != nil {
+		handleErr(err)
+		return shutdown, err
+	}
+	shutdownFuncs = append(shutdownFuncs, metricProvider.Shutdown)
+	otel.SetMeterProvider(metricProvider)
+
+	loggerProvider, err := newLoggerProvider(res, cfg.Log.Endpoint, logTlsOpt)
+	if err != nil {
+		handleErr(err)
+		return shutdown, err
+	}
+	shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
+	global.SetLoggerProvider(loggerProvider)
+
+	return shutdown, err
+}
+
 func WithTraceTLS(insecureSkipVerify bool, caPem []byte) TraceOption {
 	return func(o *traceOptions) {
 		tlsConf := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
@@ -106,89 +192,6 @@ func WithLogTLS(insecureSkipVerify bool, caPem []byte) LogOption {
 		}
 		o.tls = otlploghttp.WithTLSClientConfig(tlsConf)
 	}
-}
-
-// SetupOTelSDK bootstraps the OpenTelemetry pipeline.
-func SetupOTelSDK(ctx context.Context, info meta.AppInfo, cfg *confv1.Observability, logger *zap.Logger) (func(context.Context) error, error) {
-	if cfg == nil || !cfg.Enable {
-		logger.Info("observability is disabled, skipping OpenTelemetry setup")
-		return func(ctx context.Context) error { return nil }, nil
-	}
-
-	var shutdownFuncs []func(context.Context) error
-	var err error
-
-	shutdown := func(ctx context.Context) error {
-		var err error
-		for _, fn := range shutdownFuncs {
-			err = errors.Join(err, fn(ctx))
-		}
-		shutdownFuncs = nil
-		return err
-	}
-
-	handleErr := func(inErr error) {
-		err = errors.Join(inErr, shutdown(ctx))
-	}
-
-	prop := newPropagator()
-	otel.SetTextMapPropagator(prop)
-
-	res, err := newResource(info)
-	if err != nil {
-		handleErr(err)
-		return shutdown, err
-	}
-
-	var traceTlsOpt otlptracehttp.Option
-	var metricTlsOpt otlpmetrichttp.Option
-	var logTlsOpt otlploghttp.Option
-	if cfg.Trace.Tls.Enable {
-		tOpts := &traceOptions{logger: logger}
-		// 假设从配置文件读取 CA 内容或跳过验证
-		WithTraceTLS(cfg.Trace.Tls.InsecureSkipVerify, []byte(cfg.Trace.Tls.CaPem))(tOpts)
-		traceTlsOpt = tOpts.tls
-	}
-
-	if cfg.Metric.Tls.Enable {
-		tOpts := &metricOptions{logger: logger}
-		// 假设从配置文件读取 CA 内容或跳过验证
-		WithMetricTLS(cfg.Metric.Tls.InsecureSkipVerify, []byte(cfg.Metric.Tls.CaPem))(tOpts)
-		metricTlsOpt = tOpts.tls
-	}
-
-	if cfg.Log.Tls.Enable {
-		tOpts := &logOptions{logger: logger}
-		// 假设从配置文件读取 CA 内容或跳过验证
-		WithLogTLS(cfg.Log.Tls.InsecureSkipVerify, []byte(cfg.Log.Tls.CaPem))(tOpts)
-		logTlsOpt = tOpts.tls
-	}
-
-	tracerProvider, err := newTracerProvider(res, cfg.Trace.Endpoint, traceTlsOpt)
-	if err != nil {
-		handleErr(err)
-		return shutdown, err
-	}
-	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
-	otel.SetTracerProvider(tracerProvider)
-
-	metricProvider, err := newMeterProvider(res, cfg.Metric.Endpoint, metricTlsOpt)
-	if err != nil {
-		handleErr(err)
-		return shutdown, err
-	}
-	shutdownFuncs = append(shutdownFuncs, metricProvider.Shutdown)
-	otel.SetMeterProvider(metricProvider)
-
-	loggerProvider, err := newLoggerProvider(res, cfg.Log.Endpoint, logTlsOpt)
-	if err != nil {
-		handleErr(err)
-		return shutdown, err
-	}
-	shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
-	global.SetLoggerProvider(loggerProvider)
-
-	return shutdown, err
 }
 
 func newResource(info meta.AppInfo) (*resource.Resource, error) {

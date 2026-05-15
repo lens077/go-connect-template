@@ -5,6 +5,14 @@ const (
 	Port = "8080"
 )
 
+// RPC metadata
+const (
+	UserOwnerMetadataKey = "x-md-global-owner"
+	UserNameMetadataKey  = "x-md-global-name"
+	UserRoleMetadataKey  = "x-md-global-role"
+	UserIdMetadataKey    = "x-md-global-user-id"
+)
+
 // Log options
 const (
 	FormatConsole = "console"

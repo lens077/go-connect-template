@@ -1,50 +1,29 @@
 # 默认值
 VERSION ?= dev
-GOIMAGE ?= golang:1.25.8-alpine3.22
+GOIMAGE ?= golang:1.26.1-alpine3.22
 GOOS ?= linux
 GOARCH ?= arm64
 CGOENABLED ?= 0
 
 # 动态变量
 SERVICE = $(shell basename $$PWD)
-DOCKER_IMAGE=connect/$(SERVICE):$(VERSION)
-REPOSITORY = sumery/$(SERVICE)
+DOCKER_IMAGE=example/$(SERVICE):$(VERSION)
+REPOSITORY = example/$(SERVICE)
 REGISTER = docker.io
 ARM64=linux/arm64
 AMD64=linux/amd64
-CONSUL_ADDR=consul.example.com
+CONSUL_ADDR=consul.sumery.com
 
 .PHONY: k8s-dev
 k8s-dev:
-	kubectl apply -f deploy/dev
-
-.PHONY: k8s-prod
-k8s-prod:
-	kubectl apply -f deploy/prod
+	kubectl apply -f deploy
 
 .PHONY: dev
 dev:
-	CONSUL_ENABLED=false \
+	SERVICE_NAME=search-product-v1 \
+	CONSUL_ENABLED=true \
 	CONSUL_ADDR=$(CONSUL_ADDR) \
     CONSUL_PATH=ecommerce/user/dev.yml \
-    CONSUL_SCHEME=https \
-    CONSUL_INSECURE_SKIP_VERIFY=true \
-	go run cmd/server/main.go
-
-.PHONY: prod
-prod:
-	CONSUL_ENABLED=true \
-	CONSUL_ADDR=$(CONSUL_ADDR) \
-    CONSUL_PATH=ecommerce/user/prod.yml \
-    CONSUL_SCHEME=https \
-    CONSUL_INSECURE_SKIP_VERIFY=true \
-	go run cmd/server/main.go
-
-.PHONY: pre
-pre:
-	CONSUL_ENABLED=true \
-	CONSUL_ADDR=$(CONSUL_ADDR) \
-    CONSUL_PATH=ecommerce/user/pre.yaml \
     CONSUL_SCHEME=https \
     CONSUL_INSECURE_SKIP_VERIFY=true \
 	go run cmd/server/main.go
@@ -60,19 +39,19 @@ sqlc:
 .PHONY: api
 api:
 	# 切换到backend目录运行buf命令，确保proto文件路径在context directory内
-	cd ../../ && buf generate --template buf.gen.yaml --path api
-	cd ../../ && buf generate --template buf.gen.ts.yaml --path api
+	buf generate --template buf.gen.yaml --path api
+	buf generate --template buf.gen.ts.yaml --path api
 
 .PHONY: generate
 generate:
 	# 切换到backend目录运行buf命令，确保proto文件路径在context directory内
-	cd ../../ && buf generate --template buf.gen.yaml --path api
-	cd ../../ && buf generate --template buf.gen.ts.yaml --path api
+	buf generate --template buf.gen.yaml --path api
+	buf generate --template buf.gen.ts.yaml --path api
 
 .PHONY: conf
 conf:
 	# 切换到backend目录运行buf命令，确保proto文件路径在context directory内
-	cd ../../ && buf generate --template buf.gen.yaml --path services/user/internal/conf
+	buf generate --template buf.gen.yaml --path internal/conf
 
 .PHONY: docker-build
 # 使用 docker 构建镜像

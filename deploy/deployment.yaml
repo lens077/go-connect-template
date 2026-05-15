@@ -1,37 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ecommerce-user-deploy
+  name: example-deploy
   labels:
-    app: ecommerce-user
+    app: example
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ecommerce-user
+      app: example
   template:
     metadata:
-      name: ecommerce-user
+      name: example
       labels:
-        app: ecommerce-user
+        app: example
     spec:
       containers:
-        - name: ecommerce-user
-          image: ccr.ccs.tencentyun.com/sumery/user:dev
+        - name: example
+          image: example/example:dev
           imagePullPolicy: Always
           env:
+            - name: SERVICE_NAME
+              value: org-service-v1
             - name: CONSUL_ENABLED
               value: "true"
             - name: CONSUL_ADDR
-              value: "consul-server.consul.svc:8501"
+              value: "consul.example.com:8501"
             - name: CONSUL_PATH
-              value: "ecommerce/user/pre.yaml"
+              value: "org/example/prod.yml"
             - name: CONSUL_SCHEME
               value: "https"
             - name: CONSUL_INSECURE_SKIP_VERIFY
               value: "true"
           ports:
-            - containerPort: 30001
+            - containerPort: 30002
               protocol: TCP
           resources:
             requests:
@@ -42,14 +44,18 @@ spec:
               memory: 512Mi
 #          envFrom:
 #            - configMapRef:
-#                name: ecommerce-user-config
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 30001
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 30001
+#                name: example-config
+#          livenessProbe:
+#            httpGet:
+#              path: /healthz
+#              port: 30002
+#            initialDelaySeconds: 20
+#            periodSeconds: 10
+#            failureThreshold: 3
+#          readinessProbe:
+#            httpGet:
+#              path: /healthz
+#              port: 30002
+
       restartPolicy: Always
       

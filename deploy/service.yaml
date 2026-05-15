@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: ecommerce-user-service
+  name: example-service
 spec:
   selector:
-    app: ecommerce-user
+    app: example
   ports:
     - protocol: TCP
-      port: 30001
-      targetPort: 30001
+      port: 30000
+      targetPort: 30000
   type: LoadBalancer

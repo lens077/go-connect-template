@@ -1,5 +1,5 @@
 server:
-  addr: "0.0.0.0:30001"
+  addr: "0.0.0.0:30000"
   timeout: 10
   cors:
     allowed_origins:

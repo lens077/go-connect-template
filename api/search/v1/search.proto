@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+// 独立搜索功能
+
+package search.v1;
+option go_package = "github.com/lens077/go-connect-template/api/search/v1;searchv1";
+
+import "google/protobuf/timestamp.proto";
+
+service SearchService {
+  rpc Search(SearchRequest) returns (SearchResponse){}
+}
+
+message SearchRequest {
+  string index = 1;
+  string name = 2;
+}
+
+message SearchResponse {
+  repeated Product products = 1;
+}
+
+// 定义 Product 消息 (对应 Go 结构体中的 Product)
+message Product {
+  uint32 id = 1;
+  string spu_code = 2;
+  double price = 3;
+  string status = 4;
+  string main_media_url = 5;
+  uint32 quantity = 6;
+  string name = 7;
+}

@@ -24,6 +24,6 @@ plugins:
 inputs:
   # 引用当前模块（或工作区根目录）
   - directory: .
-    # 使用 exclude_paths 排除不需要生成 TS 的目录
+    # 🌟 使用 exclude_paths 排除不需要生成 TS 的目录
     exclude_paths:
       - internal/conf/v1

@@ -1,0 +1,184 @@
+server:
+  addr: "0.0.0.0:30000"
+  timeout: 10
+  cors:
+    allowed_origins:
+      - http://localhost:3000
+
+data:
+  database:
+    postgres:
+      host: "192.168.3.106"
+      port: 5432
+      user: "postgres"
+      password: "msdnmm"
+      db_name: "postgres"
+      tls:
+        enable: true
+        ssl_mode: "verify-full"
+        ca_pem: |-
+          -----BEGIN CERTIFICATE-----
+          MIIDGzCCAgOgAwIBAgIQNe2bhLliexvL4/8S/r8aDDANBgkqhkiG9w0BAQsFADAY
+          MRYwFAYDVQQDEw1wb3N0Z3Jlc3FsLWNhMB4XDTI2MDQyODE1MDg1M1oXDTI3MDQy
+          ODE1MDg1M1owGDEWMBQGA1UEAxMNcG9zdGdyZXNxbC1jYTCCASIwDQYJKoZIhvcN
+          AQEBBQADggEPADCCAQoCggEBALCwEfRhVLEVDRbfL3zcRIJdwgo0FvyYu3y7H0N6
+          41jezBahW7JcYbetmkzEjiCFEJKXAWBgEfmKuoqp9ZrEEMqT77D7bbv0QxlhB0aD
+          37aODmbB1wwKLnUkirbIc4UTb/ixnNXHZ8js6n7F670AuBtEcCC/w08ClfZq6kw2
+          poqRctuGyOCbZ4Jo14AJzuEs+aQrnICmIuW1V4AvzUeCrMpWFwDQd7M6ujS+4sq2
+          Gu/DKpQra938x1ueqMFLq2pGCnR5+v8+/h14LPSTY68dqZk7yL8Kc1j9cWjfShFY
+          nfBB0PuYl42CdoY1aZ80kl3AnXa22uHeA71zRhMp5qlbFL8CAwEAAaNhMF8wDgYD
+          VR0PAQH/BAQDAgKkMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAPBgNV
+          HRMBAf8EBTADAQH/MB0GA1UdDgQWBBSod8zyZgXuH84q2AEcL7ID/psQ/TANBgkq
+          hkiG9w0BAQsFAAOCAQEATEnqkxTVYlf/Od1m+gsTV44SjpP/Vqb1Gq+VaTAHmTk1
+          WS4mFZMH3T70hSC7nHowtn+hmclm8J8jIfh80MeADVkOTGwvGnZECxlj6hTy7N4w
+          9BZcws4QJio+L3H15PAGSSJIOkyOmhes2cdCCXGUmojXZJAYm0Q2DDryNkJGaENF
+          fzx83Xpnxa8Ui6jLyPk3mR2ojeu14w5iaC6mSCy+n9DEkfbuu1zvymE/+ldU6jrH
+          x6ERRx+vNAiELnjGVb8vF+LfMyFEXvrR7U/Um2lhrYbqZr2uAUWZ+xnRcrNGRzLc
+          7gz2cFAMAGicJlXeUKuk0k4C3uWERXiVFEqblH/YzQ==
+          -----END CERTIFICATE-----
+      timezone: "Asia/Shanghai"
+      pool:
+        max_conns: 20
+        min_conns: 5
+        max_conn_lifetime: 3600
+        max_conn_idle_time: 300
+  cache:
+    redis:
+      host: "dragonfly.sumery.com"
+      port: 443
+      tls:
+        enable: true
+        insecure_skip_verify: true
+        ca_pem: |-
+          -----BEGIN CERTIFICATE-----
+          MIIC0jCCAbqgAwIBAgIUa966R9F/qTvfQXrtGBAxe0VQnSQwDQYJKoZIhvcNAQEL
+          BQAwADAeFw0yNjA0MTUxMzQ5MTFaFw0yNjA3MTQxMzQ5MTFaMAAwggEiMA0GCSqG
+          SIb3DQEBAQUAA4IBDwAwggEKAoIBAQC4NpCrgGr5BNjIiOyyMl/g1CLC6miyzoCq
+          MKTdX+JKEX2A1FVa5BA7qQNYh3FIyEF3DUfwaiW1BIeVCTQ/6PGqb2idGS5mvYlq
+          WY5XkFWkOTfcjTY5Ip2SYbQMCA1ub+lD7fuGuBVa4Sxev9PBNoJdv3v7WPcBuIyY
+          zklT0XlknI91tTmp9Z1gQyaMyFYtL4/WzuonVfFofCtzrzcsZWXsSyyz8ql47r/J
+          guHk8/RJ+s8gry24L9GoIFz+qQ/yACvekiBuevhEMLc1c/a4tyzZx1j1qWOZU73X
+          rDqW3BShYiSmKMmA7Y4nHVxCOFOb+Gd9CiJEHbYR08wFnFk4lkWVAgMBAAGjRDBC
+          MA4GA1UdDwEB/wQEAwIFoDAMBgNVHRMBAf8EAjAAMCIGA1UdEQEB/wQYMBaCFGRy
+          YWdvbmZseS5zdW1lcnkuY29tMA0GCSqGSIb3DQEBCwUAA4IBAQABcWCs8+UxjH2B
+          3czmaEVyZ6HpUx0krWjbqdCmAFWiy2Qp4Uj0OKs0l+6KEDhLvmOp6uEr7EbbBTIS
+          zI6Q+8F2O6nyR59nazigZW4Et5g4bTcnbipEXdPDY33YQUa7hFPfaFvEL1TmvEd6
+          Ui3UjwNeN2tWJSw1Lhgzj3hNc1uSLnmZvg9P7QaI3XyVVOIqCDlz3GHUMsFgHyP9
+          I+Mt64QKOwZq/854UZ5jKa5Ou+w7XxUDtVLefm5+y7B1FLDmfAbkJfZCNdoB5ztQ
+          arZVQJvJCSIQ55xmuEVwgGWPqsUEDkQPCPIUGDRoe506Jsp2T0jR66P3dkCoTPUP
+          PyVDXfLI
+          -----END CERTIFICATE-----
+      username: "default"
+      password: "msdnmm"
+      db: 0
+      dial_timeout: 5
+      read_timeout: 3
+      write_timeout: 3
+      pool_size: 10
+      min_idle_conns: 5
+
+observability:
+  enable: true
+  trace:
+    endpoint: otlp-http.sumery.com:443
+    tls:
+      enable: true
+      insecure_skip_verify: true
+      ca_pem: ""
+  metric:
+    endpoint: otlp-http.sumery.com:443
+    tls:
+      enable: true
+      insecure_skip_verify: true
+      ca_pem: ""
+  log:
+    endpoint: otlp-http.sumery.com:443
+    tls:
+      enable: true
+      insecure_skip_verify: true
+      ca_pem: ""
+
+discovery:
+  consul:
+    #addr: apikv.com:8500
+    addr: consul.sumery.com:443
+    health_check: true
+    scheme: https
+    ttl:
+      # Consul Agent 期望的心跳时间间隔
+      duration: "30s"
+      # 单位: 秒
+      ping_interval_seconds: 1
+    tls:
+      enable: true
+      insecure_skip_verify: true
+      ca_pem: |-
+        -----BEGIN CERTIFICATE-----
+        MIIBiDCCAS6gAwIBAgIUaRnx06lN9Otrp04ahTRKHn1RiqswCgYIKoZIzj0EAwIw
+        IjEgMB4GA1UEAxMXY29uc3VsLWludGVybmFsLXJvb3QtY2EwHhcNMjYwNDI4MDU0
+        NjU0WhcNMjYwNzI3MDU0NjU0WjAiMSAwHgYDVQQDExdjb25zdWwtaW50ZXJuYWwt
+        cm9vdC1jYTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJbtHpvGdmrfoz7jEN0n
+        E1mzKH6EZspngoAwGxOun/SySzuCYHtDlD6WApmR2PBGECjB8pqnrhBjldxoxy1S
+        rQujQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQW
+        BBTOJjbIw4D104OieckQuEw+HvZFezAKBggqhkjOPQQDAgNIADBFAiB8etd9EvnD
+        zp2IGw4o7dSTJ4Qvqv8+s1Z66pQ7aViucgIhAIKlHJla4awYBsz6CTmPY4M7VpYs
+        JTIJfRSsqGdq0gEj
+        -----END CERTIFICATE-----
+search:
+  elastic_search:
+    addresses:
+      - https://es.sumery.com
+    username: elastic
+    password: XwjLbwoaCLvuJ7PwaAWtBkNO
+    tls:
+      enable: true
+      insecure_skip_verify: true
+      ca_pem: ""
+    tls:
+      enable: true
+      insecure_skip_verify: true
+      ca_pem: ""
+
+log:
+  level: debug
+  format: console
+  es_log:
+    enable_request_log: true
+    enable_response_log: true
+
+auth:
+  casdoor:
+    endpoint: "http://apikv.com:8000"
+    client_id: "42c7d8cf13f021cb2af2"
+    client_secret: "5da8bf6f68c1980171e60ca02b44055c7201861f"
+    organization_name: "org-ecommerce"
+    application_name: "app-mall-web"
+    certificate: |-
+      -----BEGIN CERTIFICATE-----
+      MIIE2TCCAsGgAwIBAgIDAeJAMA0GCSqGSIb3DQEBCwUAMCYxDjAMBgNVBAoTBWFk
+      bWluMRQwEgYDVQQDDAtjZXJ0X2pxd3QzazAeFw0yNjA0MjgxMjQ0MTZaFw00NjA0
+      MjgxMjQ0MTZaMCYxDjAMBgNVBAoTBWFkbWluMRQwEgYDVQQDDAtjZXJ0X2pxd3Qz
+      azCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAL58/NLJ5jJ5D3IzeSxG
+      fqn6FXdhgdXTGSBh9jx+Hk0YBptJYUKqhy1P0ABkfABSWQTTXIm/a/FjnZVIMsqm
+      jeYQ2NZ4aJomnlPqzuVs8KZybkrhxr6hRY7dyU12fgbl4t2hPJT54qVSw8vZUFsq
+      8eWw9x1Lr6rT5egFweALrd3XhJRd2Y2QpnrilQ1caZjX4efsayu3qspUdFqHpbf2
+      Go28UA6Wm+HHQhG+l7EapdsoOdCoubHMv1eqacy/sTBmSuJRRltOvx2VFLBs6s3L
+      5e8QoiI37sgVkXuG85RPvKxq79vG0mxvSo1/8k4zQwV4UP72YQXPcrR9SAA9yrlZ
+      iaanRPsfREZ00mchuP0BDv40oWBpKrjy2xGW+9bG0wHJDOzWnyrY0YsPzSo7kSoo
+      vXoArDK2T4qD5T/yRDvCBKsO2gIQpdewrMclSY+HkZNp+SHM2fLAs/W1YI8MAiIg
+      3rJYmw9QjzhgCTl4qFYFjtzqDRbXtjxwDU/4nuIkZU1tMZhmlOrA7EzaxzFp4eL4
+      skLeM4VStDFI8ckIQUexbBPX2D39e3CrA9fesLQ5o5KHsAxQWcPmaDouPNTsYtN8
+      4hgTdxm+ooOz0B81va+irXmsrdL/ETD7bcQANqV2F2CBQqwfGhglQnW4oRQr3pML
+      re4a2JbH7YWl4Yv+2M1GZcR5AgMBAAGjEDAOMAwGA1UdEwEB/wQCMAAwDQYJKoZI
+      hvcNAQELBQADggIBALw4uNK2r8xuhGKNAwmrzaExlH934J5qIW3pFXgsMjBTcY2r
+      EPg5M53PtDitajoxZnyQmAtX+gEdxvFzQ1IzZ/Ls7mBgo1nQGMDFpbiImVPh88YW
+      dQhbedmlOCkWU4/aA73AoH30VHzTWbuo7NGPO7QltPkCax+Qh128sd+Fmv0IxFPl
+      FSjU2HlOcFLT2PnzICIJIWJVCA7kGlFNY3jMzqLnH6CC2IsyQ0b2PD6MNShW/x0Z
+      W7yB8rhsaZA18hV09jxXpzOyJyuwCaTiJ1Scw9tdbO5iRcvl8l0t/tJ1BLsa+Rb3
+      y5t5cpC2kst4vIfJZn2U3v0UWD7cZjqaI6IBDj4MHZMESK8WXcoUAyQ5nzlwys1n
+      dP0p9Xel6O+JjWbPC68/L2rbMLyEnqxeI0cCLScp/moLHhumEDoWBwjV+NPLvRYX
+      qXcGXK3IuXp7mkEug/W3z0yzTEyi0h0sefRotUhS+XxA8GxWkZqpARzRZiUP5quy
+      ZGrZjW4kKBalX3w4AfiI1HvRk4WNxY7u4N9BP0L9pdu2S/L0SLiU6f4v8GTQ7X7K
+      TnuVw4NeASzZt6P6QGdVZdctRVxQeVDa74VXXhgDUhQosS54JxXDr5O7jAJ9jdaQ
+      dIACjrLtZJ/U4e+rkqDpkUijg+HHHQpjkvnzmxkLMUr0O530BfT2ZVYC7yil
+      -----END CERTIFICATE-----

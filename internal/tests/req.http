@@ -1,12 +1,25 @@
-### healthz check
-POST http://localhost:30001/healthz
+### healthz
+POST http://{{host}}:{{port}}/healthz
 Content-Type: application/json
 
-### request example
-POST http://localhost:30001/user.v1.UserService/SignIn
+### k8s svc healthz
+POST http://{{k8s_host}}:{{port}}/healthz
 Content-Type: application/json
 
-{
-  "code": "1231",
-  "state": "12313"
-}
+### 网关
+POST http://{{k8s_gateway_host}}:{{k8s_gateway_port}}/search/search.v1.SearchService/Search
+Content-Type: application/json
+
+{"index": "ecommerce_products_spus", "name": "iphone"}
+
+### k8s网关
+POST http://{{k8s_gateway_host}}:{{k8s_gateway_port}}/search/search.v1.SearchService/Search
+Content-Type: application/json
+
+{"index": "ecommerce_products_spus", "name": "iphone"}
+
+### 直连后端
+POST http://{{host}}:{{port}}/search.v1.SearchService/Search
+Content-Type: application/json
+
+{"index": "ecommerce_products_spus", "name": "iphone"}

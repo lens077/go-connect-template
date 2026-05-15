@@ -17,9 +17,9 @@ func healthStatus(ctx context.Context, deps *data.Data) HealthStatus {
 
 	// 注册独立的检查项
 	checks := map[string]func(context.Context) error{
-		"database": deps.CheckDatabase, // 数据库
-		"cache":    deps.CheckCache,    // 缓存
-		// 如果有需要，可以继续添加其它基础设施的健康检查
+		"postgres":      deps.CheckDatabase,
+		"redis":         deps.CheckCache,
+		"elasticSearch": deps.CheckElasticSearch,
 	}
 
 	for name, check := range checks {

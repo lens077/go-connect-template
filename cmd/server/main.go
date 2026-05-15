@@ -76,6 +76,7 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 	}
 
 	return fx.New(
+		// 基础模块
 		logger.Module, // 日志
 		config.Module, // 配置
 		// 注入 FX 事件日志适配器
@@ -114,10 +115,25 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 			func(_ *registry.ConsulRegistry) {},
 
 			// 初始化并启动核心应用逻辑
-			func(lc fx.Lifecycle, conf *confv1.Bootstrap, logger *zap.Logger, srv *http.Server, otelShutdown func(context.Context) error) {
+			func(lc fx.Lifecycle, conf *confv1.Bootstrap, d *data.Data, logger *zap.Logger, srv *http.Server, otelShutdown func(context.Context) error) {
 				lc.Append(fx.Hook{
 					// 启动服务时的操作
 					OnStart: func(ctx context.Context) error {
+						logger.Info("performing startup health checks...")
+
+						// 检查数据库
+						if err := d.CheckDatabase(ctx); err != nil {
+							return err
+						}
+						// 检查缓存
+						if err := d.CheckCache(ctx); err != nil {
+							return err
+						}
+						// 检查 Elasticsearch
+						if err := d.CheckElasticSearch(ctx); err != nil {
+							return err
+						}
+
 						logger.Info("starting server",
 							zap.String("addr", srv.Addr),
 							zap.String("environment", deploymentMode),
@@ -132,15 +148,22 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 					// 停止服务前的操作
 					OnStop: func(ctx context.Context) error {
 						logger.Info("stopping server...")
-						// 优雅关闭服务器
+						// 关闭服务器
 						if err := srv.Shutdown(ctx); err != nil {
 							logger.Error("failed to shutdown server gracefully", zap.Error(err))
 						}
-						// 关闭 Otel
+
+						// 关闭transport 维护的空闲 TCP 连接
+						if t, ok := http.DefaultTransport.(*http.Transport); ok {
+							t.CloseIdleConnections()
+						}
+
+						// 关闭otel
+						// 1. trace: 强制将内存中还没发出的 Span（链路数据）通过 HTTP 刷给 Collector
+						// 2. metric: 它会触发最后一次指标收集，并确保数据推送到后端
+						// 3. logging: 确保内存中的日志数据全部持久化
 						if otelShutdown != nil {
-							if err := otelShutdown(ctx); err != nil {
-								logger.Error("failed to shutdown otel observability", zap.Error(err))
-							}
+							return otelShutdown(ctx) // 执行聚合后的停止逻辑
 						}
 						return nil
 					},

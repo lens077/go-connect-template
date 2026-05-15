@@ -12,7 +12,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v9"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/lens077/ecommerce/backend/constants"
+	"github.com/lens077/go-connect-template/constants"
 	conf "github.com/lens077/go-connect-template/internal/conf/v1"
 	"github.com/lens077/go-connect-template/internal/pkg/log"
 	"github.com/redis/go-redis/v9"
@@ -28,7 +28,7 @@ var Module = fx.Module("data",
 		NewRedisClient,
 		NewCasdoorAuthClient,
 		NewElasticSearchClient,
-		NewUserRepo,
+		NewSearchRepo,
 	),
 )
 

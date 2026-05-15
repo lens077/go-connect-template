@@ -1,16 +1,16 @@
 services:
 
-  ecommerce-user:
-    image: harbor.apikv.com:5443/ecommerce/user:dev
+  ecommerce-search:
+    image: harbor.apikv.com:5443/ecommerce/search:dev
     networks:
       - ecommerce
     ports:
-      - "0.0.0.0:30001:30001"
+      - "0.0.0.0:30002:30002"
     environment:
       - RUN_MODE=prod
       - CONFIG_CENTER=http://apikv.com:8500
-      - CONFIG_PATH=ecommerce/user/prod.yml
-    container_name: ecommerce-user
+      - CONFIG_PATH=ecommerce/search/dev.yml
+    container_name: ecommerce-search
     restart: on-failure:3
 
 networks:

@@ -89,7 +89,7 @@ var Module = fx.Module("registry",
 					}
 
 					// 启动 TTL 心跳 Pinger
-					go reg.TtlCheckPinger(context.Background(), conf)
+					go reg.TtlCheckPinger(ctx, conf)
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
@@ -149,11 +149,15 @@ func NewConsulRegistry(addr, ID, Name string, opts ...Option) (*ConsulRegistry, 
 
 // Register 使用 TTL 健康检查注册服务
 func (r *ConsulRegistry) Register(conf *confv1.Bootstrap, info meta.AppInfo) error {
-	host, port, err := net.SplitHostPort(r.Addr)
+	r.logger.Debug("registering service to Consul", zap.String("id", r.ID))
+	// 使用服务本身的地址和端口，而不是 Consul 的地址
+	host := info.Host
+	// 从服务配置中获取端口
+	_, portStr, err := net.SplitHostPort(conf.Server.Addr)
 	if err != nil {
 		return err
 	}
-	portNum, err := strconv.Atoi(port)
+	portNum, err := strconv.Atoi(portStr)
 	if err != nil {
 		return err
 	}
@@ -175,6 +179,7 @@ func (r *ConsulRegistry) Register(conf *confv1.Bootstrap, info meta.AppInfo) err
 			DeregisterCriticalServiceAfter: "1m",
 		},
 	}
+	r.logger.Debug("service registration completed", zap.String("id", r.ID))
 
 	if err := r.client.Agent().ServiceRegister(reg); err != nil {
 		r.logger.Error("failed to register service with Consul", zap.Error(err))
@@ -187,7 +192,13 @@ func (r *ConsulRegistry) Register(conf *confv1.Bootstrap, info meta.AppInfo) err
 
 // TtlCheckPinger 负责定期向 Consul Agent 发送心跳信号
 func (r *ConsulRegistry) TtlCheckPinger(ctx context.Context, conf *confv1.Bootstrap) {
-	TtlPingInterval := time.Duration(conf.Discovery.Consul.Ttl.PingInterval)
+	// ping_interval_seconds 配置的单位是秒，需要转换为 time.Duration
+	pingIntervalSeconds := conf.Discovery.Consul.Ttl.PingIntervalSeconds
+	if pingIntervalSeconds <= 0 {
+		pingIntervalSeconds = 10
+		r.logger.Warn("ping_interval_seconds is not set or invalid, using default value", zap.Uint64("default", pingIntervalSeconds))
+	}
+	TtlPingInterval := time.Duration(pingIntervalSeconds) * time.Second
 	ticker := time.NewTicker(TtlPingInterval)
 	defer ticker.Stop()
 
