@@ -11,9 +11,12 @@ import (
 	"github.com/casdoor/casdoor-go-sdk/casdoorsdk"
 	"github.com/elastic/go-elasticsearch/v9"
 	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lens077/go-connect-template/constants"
 	conf "github.com/lens077/go-connect-template/internal/conf/v1"
+	"github.com/lens077/go-connect-template/internal/pkg/dbutil"
 	"github.com/lens077/go-connect-template/internal/pkg/log"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/fx"
@@ -32,24 +35,96 @@ var Module = fx.Module("data",
 	),
 )
 
+type contextTxKey struct{}
+
 // Data 包含所有数据源的客户端
 type Data struct {
-	db   *pgxpool.Pool
-	rdb  *redis.Client
-	auth *casdoorsdk.Client
-	es   *elasticsearch.TypedClient
-	log  *zap.Logger
+	db           *pgxpool.Pool
+	pgx          *pgxpool.Pool
+	rdb          *redis.Client
+	auth         *casdoorsdk.Client
+	es           *elasticsearch.TypedClient
+	dbErrHandler *dbutil.Handler
+	log          *zap.Logger
 }
 
 // NewData 是 Data 的构造函数
 func NewData(db *pgxpool.Pool, rdb *redis.Client, auth *casdoorsdk.Client, es *elasticsearch.TypedClient, logger *zap.Logger) *Data {
 	return &Data{
 		db:   db,
+		pgx:  db,
 		rdb:  rdb,
 		auth: auth,
 		es:   es,
 		log:  logger,
+		dbErrHandler: dbutil.NewHandler(
+			// dbutil.WithErrorMapping("23505", biz.ErrAlreadyExists),
+			// dbutil.WithErrorMapping("23503", biz.ErrNotFound),
+			dbutil.WithLogging(true),
+			dbutil.WithLogger(func(err error, pgErr *pgconn.PgError) {
+				if pgErr != nil {
+					logger.Warn("database error",
+						zap.String("code", pgErr.Code),
+						zap.String("message", pgErr.Message),
+						zap.String("detail", pgErr.Detail),
+					)
+				}
+			}),
+		),
 	}
+}
+
+// DB 从上下文中获取事务或返回默认DB
+// 通过 data.DB(ctx) 自动获取事务或普通连接
+// example: db := p.data.DB(ctx)
+// func (d *Data) DB(ctx context.Context) *models.Queries {
+// 	if tx, ok := ctx.Value(contextTxKey{}).(pgx.Tx); ok {
+// 		// 如果上下文中有事务，使用事务版 Queries
+// 		return models.New(tx)
+// 	}
+// 	// 无事务时使用普通连接
+// 	return d.db
+// }
+
+// WithTx 将事务存入上下文
+func (d *Data) WithTx(ctx context.Context, tx pgx.Tx) context.Context {
+	return context.WithValue(ctx, contextTxKey{}, tx)
+}
+
+// ExecTx 支持嵌套事务检测
+func (d *Data) ExecTx(ctx context.Context, fn func(context.Context) error) error {
+	if _, ok := ctx.Value(contextTxKey{}).(pgx.Tx); ok {
+		d.log.Debug("reuse existing transaction")
+		return fn(ctx)
+	}
+
+	d.log.Info("begin transaction")
+	tx, err := d.pgx.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin tx failed: %w", err)
+	}
+
+	txCtx := d.WithTx(ctx, tx)
+
+	defer func() {
+		if p := recover(); p != nil {
+			_ = tx.Rollback(ctx)
+			panic(p)
+		}
+	}()
+
+	if err := fn(txCtx); err != nil {
+		if rbErr := tx.Rollback(ctx); rbErr != nil {
+			return fmt.Errorf("%w (rollback err: %v)", err, rbErr)
+		}
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit failed: %w", err)
+	}
+	d.log.Info("transaction committed")
+	return nil
 }
 
 // NewPostgresPool 创建pg数据库连接池

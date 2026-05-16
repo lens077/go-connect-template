@@ -12,7 +12,7 @@ REPOSITORY = example/$(SERVICE)
 REGISTER = docker.io
 ARM64=linux/arm64
 AMD64=linux/amd64
-CONSUL_ADDR=consul.sumery.com
+CONSUL_ADDR=consul.example.com
 
 .PHONY: k8s-dev
 k8s-dev:
@@ -20,7 +20,7 @@ k8s-dev:
 
 .PHONY: dev
 dev:
-	SERVICE_NAME=search-product-v1 \
+	SERVICE_NAME=org-service-v1 \
 	CONSUL_ENABLED=true \
 	CONSUL_ADDR=$(CONSUL_ADDR) \
     CONSUL_PATH=ecommerce/user/dev.yml \
