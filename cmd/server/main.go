@@ -6,19 +6,17 @@ import (
 	"flag"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/lens077/go-connect-template/constants"
 	"github.com/lens077/go-connect-template/internal/biz"
-	"github.com/lens077/go-connect-template/internal/pkg/env"
-	"github.com/lens077/go-connect-template/internal/pkg/meta"
-	"github.com/lens077/go-connect-template/internal/pkg/otel"
-	"go.uber.org/fx/fxevent"
-	"go.uber.org/zap/zapcore"
-
 	confv1 "github.com/lens077/go-connect-template/internal/conf/v1"
 	"github.com/lens077/go-connect-template/internal/data"
 	"github.com/lens077/go-connect-template/internal/pkg/config"
+	"github.com/lens077/go-connect-template/internal/pkg/env"
 	logger "github.com/lens077/go-connect-template/internal/pkg/log"
+	"github.com/lens077/go-connect-template/internal/pkg/meta"
+	"github.com/lens077/go-connect-template/internal/pkg/otel"
 	"github.com/lens077/go-connect-template/internal/pkg/registry"
 	"github.com/lens077/go-connect-template/internal/server"
 	"github.com/lens077/go-connect-template/internal/service"
@@ -43,10 +41,8 @@ func main() {
 		*serviceVersion,
 	)
 
-	ctx := context.Background()
-
 	// 启动应用
-	if err := fxApp.Start(ctx); err != nil {
+	if err := fxApp.Start(context.Background()); err != nil {
 		zap.Error(err)
 		os.Exit(1)
 	}
@@ -55,7 +51,11 @@ func main() {
 	<-fxApp.Done()
 
 	// 优雅关闭
-	if err := fxApp.Stop(ctx); err != nil {
+	// 定制一个超时的 Context
+	// 确保所有微服务的 OnStop 钩子（包括 Consul 注销、HTTP 关闭、OTel 刷盘）必须在定义的值内收尾
+	stopCtx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
+	defer cancel()
+	if err := fxApp.Stop(stopCtx); err != nil {
 		zap.Error(err)
 		os.Exit(1)
 	}
@@ -77,16 +77,9 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 
 	return fx.New(
 		// 基础模块
-		logger.Module, // 日志
-		config.Module, // 配置
-		// 注入 FX 事件日志适配器
-		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
-			zlog := &fxevent.ZapLogger{Logger: log}
-			// 按需调整日志级别（可选）
-			zlog.UseLogLevel(zapcore.InfoLevel)    // 普通事件用 Info 级别
-			zlog.UseErrorLevel(zapcore.ErrorLevel) // 错误事件用 Error 级别
-			return zlog
-		}),
+		logger.Module,     // 日志
+		config.Module,     // 配置
+		logger.FxLogger(), // Fx框架本身的日志控制器
 
 		registry.Module, // 服务注册/发现
 
@@ -111,8 +104,12 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 
 		// 配置验证和初始化
 		fx.Invoke(
-			// 注册应用到注册中心
-			func(_ *registry.ConsulRegistry) {},
+			// 启动之前初始化 Consul 注册中心
+			func(reg *registry.ConsulRegistry, logger *zap.Logger) {
+				if reg != nil {
+					logger.Info("consul service discovery component lifecycle successfully initialized")
+				}
+			},
 
 			// 初始化并启动核心应用逻辑
 			func(lc fx.Lifecycle, conf *confv1.Bootstrap, d *data.Data, logger *zap.Logger, srv *http.Server, otelShutdown func(context.Context) error) {

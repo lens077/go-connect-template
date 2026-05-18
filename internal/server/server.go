@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"connectrpc.com/connect"
 	connectcors "connectrpc.com/cors"
@@ -61,9 +60,9 @@ func NewHTTPServer(
 	server := &http.Server{
 		Addr:         cfg.Server.Addr,
 		Handler:      handlerChain,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  30 * time.Second,
+		ReadTimeout:  cfg.Server.Http.ReadTimeout.AsDuration(),
+		WriteTimeout: cfg.Server.Http.WriteTimeout.AsDuration(),
+		IdleTimeout:  cfg.Server.Http.IdleTimeout.AsDuration(),
 	}
 
 	// 注册 Fx 生命周期

@@ -13,18 +13,16 @@ type ZapESLogger struct {
 	Conf   *conf.Log
 }
 
-// RequestBodyEnabled 是否需要日志中看到发送给 ES 的 JSON 内容
 func (z *ZapESLogger) RequestBodyEnabled() bool {
-	return z.Conf.EsLog.EnableRequestLog
+	return z.Conf.Elasticsearch.EnableRequest
 }
 
-// ResponseBodyEnabled 是否需要日志中看到 ES 返回的完整结果
 func (z *ZapESLogger) ResponseBodyEnabled() bool {
-	return z.Conf.EsLog.EnableResponseLog
+	return z.Conf.Elasticsearch.EnableResponse
 }
 
 func (z *ZapESLogger) LogRoundTrip(req *http.Request, res *http.Response, err error, start time.Time, dur time.Duration) error {
-	z.Logger.Info("Elasticsearch Request",
+	z.Logger.Info("elasticsearch request",
 		zap.String("method", req.Method),
 		zap.String("url", req.URL.String()),
 		zap.Duration("duration", dur),

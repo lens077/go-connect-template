@@ -131,46 +131,87 @@ func (d *Data) ExecTx(ctx context.Context, fn func(context.Context) error) error
 func NewPostgresPool(lc fx.Lifecycle, cfg *conf.Bootstrap, logger *zap.Logger) (*pgxpool.Pool, error) {
 	dbCfg := cfg.Data.Database.Postgres // 从 Config 中获取 Data 配置
 
-	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=%s&timezone=%s",
-		dbCfg.User,
-		dbCfg.Password,
-		dbCfg.Host,
-		dbCfg.Port,
-		dbCfg.DbName,
-		dbCfg.SslMode,
-		dbCfg.Timezone,
-	)
-
-	poolCfg, err := pgxpool.ParseConfig(connString)
+	// 使用 ParseConfig 生成带有内部安全凭证的空模板
+	// 传入空字符串即可，它会生成一套标准的默认连接池参数
+	pgConf, err := pgxpool.ParseConfig("")
 	if err != nil {
-		return nil, fmt.Errorf("parse database config failed: %v", err)
+		return nil, fmt.Errorf("parse base pool config failed: %w", err)
 	}
 
-	switch dbCfg.SslMode {
-	case constants.SslModeVerifyCa, constants.SslModeVerifyFull:
+	// PostgreSQL 启动参数
+	if pgConf.ConnConfig.RuntimeParams == nil {
+		pgConf.ConnConfig.RuntimeParams = make(map[string]string)
+	}
+	// 时区配置（例如 "Asia/Shanghai" 或 "UTC"）
+	pgConf.ConnConfig.RuntimeParams["timezone"] = dbCfg.Timezone
+
+	// 将 Consul/Viper 读取到的具体配置灌入模板中
+	pgConf.ConnConfig.Host = dbCfg.Host
+	pgConf.ConnConfig.Port = uint16(dbCfg.Port)
+	pgConf.ConnConfig.Database = dbCfg.DbName
+	pgConf.ConnConfig.User = dbCfg.User
+	pgConf.ConnConfig.Password = dbCfg.Password
+
+	// 配置连接池熔断与超时属性
+	pgConf.MaxConnLifetime = dbCfg.Pool.MaxConnLifetime.AsDuration()
+	pgConf.MaxConnIdleTime = dbCfg.Pool.MaxConnIdleTime.AsDuration()
+	pgConf.PingTimeout = dbCfg.Pool.PingTimeout.AsDuration()
+	pgConf.MaxConns = int32(dbCfg.Pool.MaxConns)
+	pgConf.MinConns = int32(dbCfg.Pool.MinConns)
+
+	// SSL 证书校验逻辑
+	switch dbCfg.Tls.SslMode {
+	case constants.SslModeVerifyCa:
 		if dbCfg.Tls.CaPem != "" {
 			caCertPool := x509.NewCertPool()
 			if ok := caCertPool.AppendCertsFromPEM([]byte(dbCfg.Tls.CaPem)); !ok {
 				return nil, fmt.Errorf("failed to parse CA PEM")
 			}
 
-			// TODO tls config
-			if poolCfg.ConnConfig.TLSConfig == nil {
-				poolCfg.ConnConfig.TLSConfig = &tls.Config{}
+			logger.Info("setting up ssl mode: verify-ca config")
+			pgConf.ConnConfig.TLSConfig = &tls.Config{
+				RootCAs:            caCertPool,
+				InsecureSkipVerify: true,
+				VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+					opts := x509.VerifyOptions{
+						Roots:         caCertPool,
+						CurrentTime:   time.Now(),
+						Intermediates: x509.NewCertPool(),
+					}
+					cert, err := x509.ParseCertificate(rawCerts[0])
+					if err != nil {
+						return err
+					}
+					for _, rawCert := range rawCerts[1:] {
+						if c, err := x509.ParseCertificate(rawCert); err == nil {
+							opts.Intermediates.AddCert(c)
+						}
+					}
+					_, err = cert.Verify(opts)
+					return err
+				},
+			}
+		}
+	case constants.SslModeVerifyFull:
+		if dbCfg.Tls.CaPem != "" {
+			caCertPool := x509.NewCertPool()
+			if ok := caCertPool.AppendCertsFromPEM([]byte(dbCfg.Tls.CaPem)); !ok {
+				return nil, fmt.Errorf("failed to parse CA PEM")
 			}
 
-			poolCfg.ConnConfig.TLSConfig.RootCAs = caCertPool
-			// 关键点：如果你的证书域名是 server.dc1.consul，而连接地址是 IP
-			// 那么需要显式指定 ServerName 否则 verify-full 会报错
-			poolCfg.ConnConfig.TLSConfig.ServerName = dbCfg.Host
+			logger.Info("setting up TLS config")
+			pgConf.ConnConfig.TLSConfig = &tls.Config{
+				RootCAs:            caCertPool,
+				InsecureSkipVerify: false,
+				ServerName:         dbCfg.Host,
+			}
 		}
 	}
 
 	// 链路追踪配置
-	poolCfg.ConnConfig.Tracer = otelpgx.NewTracer()
+	pgConf.ConnConfig.Tracer = otelpgx.NewTracer()
 
-	// 创建连接池
-	pool, err := pgxpool.NewWithConfig(context.Background(), poolCfg)
+	pool, err := pgxpool.NewWithConfig(context.Background(), pgConf)
 	if err != nil {
 		return nil, fmt.Errorf("connect to database failed: %v", err)
 	}
@@ -181,14 +222,15 @@ func NewPostgresPool(lc fx.Lifecycle, cfg *conf.Bootstrap, logger *zap.Logger) (
 	}
 
 	// 测试连接
-	if err := pool.Ping(context.Background()); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), dbCfg.Pool.PingTimeout.AsDuration())
+	defer cancel()
+	if err := pool.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("database ping failed: %v", err)
 	}
 
 	logger.Info(fmt.Sprintf("database connected successfully to %s", dbCfg.Host))
 
 	lc.Append(fx.Hook{
-		// 应用停止时释放资源
 		OnStop: func(ctx context.Context) error {
 			logger.Info("closing database connection...")
 			pool.Close()
@@ -209,9 +251,9 @@ func NewRedisClient(lc fx.Lifecycle, cfg *conf.Bootstrap, logger *zap.Logger) (*
 		Username:     redisCfg.Username,
 		Password:     redisCfg.Password,
 		DB:           int(redisCfg.Db),
-		DialTimeout:  time.Duration(redisCfg.DialTimeout) * time.Second,
-		ReadTimeout:  time.Duration(redisCfg.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(redisCfg.WriteTimeout) * time.Second,
+		DialTimeout:  redisCfg.DialTimeout.AsDuration(),
+		ReadTimeout:  redisCfg.ReadTimeout.AsDuration(),
+		WriteTimeout: redisCfg.WriteTimeout.AsDuration(),
 		PoolSize:     int(redisCfg.PoolSize),
 		MinIdleConns: int(redisCfg.MinIdleConns),
 	}
@@ -243,7 +285,7 @@ func NewRedisClient(lc fx.Lifecycle, cfg *conf.Bootstrap, logger *zap.Logger) (*
 	rdb := redis.NewClient(opts)
 
 	// 测试连接
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(redisCfg.DialTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), redisCfg.DialTimeout.AsDuration())
 	defer cancel()
 
 	if err := rdb.Ping(ctx).Err(); err != nil {

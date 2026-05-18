@@ -15,7 +15,7 @@ data:
       db_name: postgres
       tls:
         enable: true
-        ssl_mode: "verify-full"
+        ssl_mode: "verify-ca"
         ca_pem: ""
       timezone: "Asia/Shanghai"
       pool:
