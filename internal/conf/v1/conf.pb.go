@@ -178,7 +178,7 @@ func (x *Log) GetElasticsearch() *Log_ElasticSearch {
 type Server struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Addr          string                 `protobuf:"bytes,1,opt,name=addr,proto3" json:"addr,omitempty"`
-	Timeout       int64                  `protobuf:"varint,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Http          *Server_HTTP           `protobuf:"bytes,2,opt,name=http,proto3" json:"http,omitempty"`
 	Cors          *Server_Cors           `protobuf:"bytes,3,opt,name=cors,proto3" json:"cors,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -221,11 +221,11 @@ func (x *Server) GetAddr() string {
 	return ""
 }
 
-func (x *Server) GetTimeout() int64 {
+func (x *Server) GetHttp() *Server_HTTP {
 	if x != nil {
-		return x.Timeout
+		return x.Http
 	}
-	return 0
+	return nil
 }
 
 func (x *Server) GetCors() *Server_Cors {
@@ -651,6 +651,66 @@ func (x *Log_ElasticSearch) GetEnableResponse() bool {
 	return false
 }
 
+type Server_HTTP struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ReadTimeout   *durationpb.Duration   `protobuf:"bytes,1,opt,name=read_timeout,json=readTimeout,proto3" json:"read_timeout,omitempty"`
+	WriteTimeout  *durationpb.Duration   `protobuf:"bytes,2,opt,name=write_timeout,json=writeTimeout,proto3" json:"write_timeout,omitempty"`
+	IdleTimeout   *durationpb.Duration   `protobuf:"bytes,3,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Server_HTTP) Reset() {
+	*x = Server_HTTP{}
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Server_HTTP) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Server_HTTP) ProtoMessage() {}
+
+func (x *Server_HTTP) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Server_HTTP.ProtoReflect.Descriptor instead.
+func (*Server_HTTP) Descriptor() ([]byte, []int) {
+	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{2, 0}
+}
+
+func (x *Server_HTTP) GetReadTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.ReadTimeout
+	}
+	return nil
+}
+
+func (x *Server_HTTP) GetWriteTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.WriteTimeout
+	}
+	return nil
+}
+
+func (x *Server_HTTP) GetIdleTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.IdleTimeout
+	}
+	return nil
+}
+
 type Server_Cors struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	AllowedOrigins []string               `protobuf:"bytes,1,rep,name=allowed_origins,json=allowedOrigins,proto3" json:"allowed_origins,omitempty"`
@@ -660,7 +720,7 @@ type Server_Cors struct {
 
 func (x *Server_Cors) Reset() {
 	*x = Server_Cors{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -672,7 +732,7 @@ func (x *Server_Cors) String() string {
 func (*Server_Cors) ProtoMessage() {}
 
 func (x *Server_Cors) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -685,7 +745,7 @@ func (x *Server_Cors) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Server_Cors.ProtoReflect.Descriptor instead.
 func (*Server_Cors) Descriptor() ([]byte, []int) {
-	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{2, 0}
+	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{2, 1}
 }
 
 func (x *Server_Cors) GetAllowedOrigins() []string {
@@ -704,7 +764,7 @@ type Data_Database struct {
 
 func (x *Data_Database) Reset() {
 	*x = Data_Database{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[12]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -716,7 +776,7 @@ func (x *Data_Database) String() string {
 func (*Data_Database) ProtoMessage() {}
 
 func (x *Data_Database) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[12]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -748,7 +808,7 @@ type Data_Cache struct {
 
 func (x *Data_Cache) Reset() {
 	*x = Data_Cache{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[13]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -760,7 +820,7 @@ func (x *Data_Cache) String() string {
 func (*Data_Cache) ProtoMessage() {}
 
 func (x *Data_Cache) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[13]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -786,11 +846,10 @@ func (x *Data_Cache) GetRedis() *Data_Cache_Redis {
 type Data_Database_Postgres struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
 	Host          string                               `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
-	Port          int32                                `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	Port          uint32                               `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
 	User          string                               `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
 	Password      string                               `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty"`
 	DbName        string                               `protobuf:"bytes,5,opt,name=db_name,json=dbName,proto3" json:"db_name,omitempty"`
-	SslMode       string                               `protobuf:"bytes,6,opt,name=ssl_mode,json=sslMode,proto3" json:"ssl_mode,omitempty"`
 	Timezone      string                               `protobuf:"bytes,7,opt,name=timezone,proto3" json:"timezone,omitempty"`
 	Pool          *Data_Database_Postgres_DatabasePool `protobuf:"bytes,8,opt,name=pool,proto3" json:"pool,omitempty"`
 	Tls           *Data_Database_Postgres_Tls          `protobuf:"bytes,9,opt,name=tls,proto3" json:"tls,omitempty"`
@@ -800,7 +859,7 @@ type Data_Database_Postgres struct {
 
 func (x *Data_Database_Postgres) Reset() {
 	*x = Data_Database_Postgres{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[14]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -812,7 +871,7 @@ func (x *Data_Database_Postgres) String() string {
 func (*Data_Database_Postgres) ProtoMessage() {}
 
 func (x *Data_Database_Postgres) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[14]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -835,7 +894,7 @@ func (x *Data_Database_Postgres) GetHost() string {
 	return ""
 }
 
-func (x *Data_Database_Postgres) GetPort() int32 {
+func (x *Data_Database_Postgres) GetPort() uint32 {
 	if x != nil {
 		return x.Port
 	}
@@ -863,13 +922,6 @@ func (x *Data_Database_Postgres) GetDbName() string {
 	return ""
 }
 
-func (x *Data_Database_Postgres) GetSslMode() string {
-	if x != nil {
-		return x.SslMode
-	}
-	return ""
-}
-
 func (x *Data_Database_Postgres) GetTimezone() string {
 	if x != nil {
 		return x.Timezone
@@ -893,17 +945,18 @@ func (x *Data_Database_Postgres) GetTls() *Data_Database_Postgres_Tls {
 
 type Data_Database_Postgres_DatabasePool struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	MaxConns        int32                  `protobuf:"varint,1,opt,name=max_conns,json=maxConns,proto3" json:"max_conns,omitempty"`
-	MinConns        int32                  `protobuf:"varint,2,opt,name=min_conns,json=minConns,proto3" json:"min_conns,omitempty"`
-	MaxConnLifetime int64                  `protobuf:"varint,3,opt,name=max_conn_lifetime,json=maxConnLifetime,proto3" json:"max_conn_lifetime,omitempty"`
-	MaxConnIdleTime int64                  `protobuf:"varint,4,opt,name=max_conn_idle_time,json=maxConnIdleTime,proto3" json:"max_conn_idle_time,omitempty"`
+	MaxConns        uint32                 `protobuf:"varint,1,opt,name=max_conns,json=maxConns,proto3" json:"max_conns,omitempty"`
+	MinConns        uint32                 `protobuf:"varint,2,opt,name=min_conns,json=minConns,proto3" json:"min_conns,omitempty"`
+	MaxConnLifetime *durationpb.Duration   `protobuf:"bytes,3,opt,name=max_conn_lifetime,json=maxConnLifetime,proto3" json:"max_conn_lifetime,omitempty"`
+	MaxConnIdleTime *durationpb.Duration   `protobuf:"bytes,4,opt,name=max_conn_idle_time,json=maxConnIdleTime,proto3" json:"max_conn_idle_time,omitempty"`
+	PingTimeout     *durationpb.Duration   `protobuf:"bytes,5,opt,name=ping_timeout,json=pingTimeout,proto3" json:"ping_timeout,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Data_Database_Postgres_DatabasePool) Reset() {
 	*x = Data_Database_Postgres_DatabasePool{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[15]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -915,7 +968,7 @@ func (x *Data_Database_Postgres_DatabasePool) String() string {
 func (*Data_Database_Postgres_DatabasePool) ProtoMessage() {}
 
 func (x *Data_Database_Postgres_DatabasePool) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[15]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -931,38 +984,45 @@ func (*Data_Database_Postgres_DatabasePool) Descriptor() ([]byte, []int) {
 	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{3, 0, 0, 0}
 }
 
-func (x *Data_Database_Postgres_DatabasePool) GetMaxConns() int32 {
+func (x *Data_Database_Postgres_DatabasePool) GetMaxConns() uint32 {
 	if x != nil {
 		return x.MaxConns
 	}
 	return 0
 }
 
-func (x *Data_Database_Postgres_DatabasePool) GetMinConns() int32 {
+func (x *Data_Database_Postgres_DatabasePool) GetMinConns() uint32 {
 	if x != nil {
 		return x.MinConns
 	}
 	return 0
 }
 
-func (x *Data_Database_Postgres_DatabasePool) GetMaxConnLifetime() int64 {
+func (x *Data_Database_Postgres_DatabasePool) GetMaxConnLifetime() *durationpb.Duration {
 	if x != nil {
 		return x.MaxConnLifetime
 	}
-	return 0
+	return nil
 }
 
-func (x *Data_Database_Postgres_DatabasePool) GetMaxConnIdleTime() int64 {
+func (x *Data_Database_Postgres_DatabasePool) GetMaxConnIdleTime() *durationpb.Duration {
 	if x != nil {
 		return x.MaxConnIdleTime
 	}
-	return 0
+	return nil
+}
+
+func (x *Data_Database_Postgres_DatabasePool) GetPingTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.PingTimeout
+	}
+	return nil
 }
 
 type Data_Database_Postgres_Tls struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Enable        bool                   `protobuf:"varint,1,opt,name=enable,proto3" json:"enable,omitempty"`
-	SslMode       string                 `protobuf:"bytes,2,opt,name=ssl_mode,json=sslMode,proto3" json:"ssl_mode,omitempty"`
+	SslMode       string                 `protobuf:"bytes,6,opt,name=ssl_mode,json=sslMode,proto3" json:"ssl_mode,omitempty"`
 	CaPem         string                 `protobuf:"bytes,3,opt,name=ca_pem,json=caPem,proto3" json:"ca_pem,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -970,7 +1030,7 @@ type Data_Database_Postgres_Tls struct {
 
 func (x *Data_Database_Postgres_Tls) Reset() {
 	*x = Data_Database_Postgres_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[16]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -982,7 +1042,7 @@ func (x *Data_Database_Postgres_Tls) String() string {
 func (*Data_Database_Postgres_Tls) ProtoMessage() {}
 
 func (x *Data_Database_Postgres_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[16]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1022,15 +1082,15 @@ func (x *Data_Database_Postgres_Tls) GetCaPem() string {
 type Data_Cache_Redis struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Host          string                 `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
-	Port          int32                  `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	Port          uint32                 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
 	Username      string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
 	Password      string                 `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty"`
-	Db            int32                  `protobuf:"varint,5,opt,name=db,proto3" json:"db,omitempty"`
-	DialTimeout   int64                  `protobuf:"varint,6,opt,name=dial_timeout,json=dialTimeout,proto3" json:"dial_timeout,omitempty"`
-	ReadTimeout   int64                  `protobuf:"varint,7,opt,name=read_timeout,json=readTimeout,proto3" json:"read_timeout,omitempty"`
-	WriteTimeout  int64                  `protobuf:"varint,8,opt,name=write_timeout,json=writeTimeout,proto3" json:"write_timeout,omitempty"`
-	PoolSize      int32                  `protobuf:"varint,9,opt,name=pool_size,json=poolSize,proto3" json:"pool_size,omitempty"`
-	MinIdleConns  int32                  `protobuf:"varint,10,opt,name=min_idle_conns,json=minIdleConns,proto3" json:"min_idle_conns,omitempty"`
+	Db            uint32                 `protobuf:"varint,5,opt,name=db,proto3" json:"db,omitempty"`
+	DialTimeout   *durationpb.Duration   `protobuf:"bytes,6,opt,name=dial_timeout,json=dialTimeout,proto3" json:"dial_timeout,omitempty"`
+	ReadTimeout   *durationpb.Duration   `protobuf:"bytes,7,opt,name=read_timeout,json=readTimeout,proto3" json:"read_timeout,omitempty"`
+	WriteTimeout  *durationpb.Duration   `protobuf:"bytes,8,opt,name=write_timeout,json=writeTimeout,proto3" json:"write_timeout,omitempty"`
+	PoolSize      uint32                 `protobuf:"varint,9,opt,name=pool_size,json=poolSize,proto3" json:"pool_size,omitempty"`
+	MinIdleConns  uint32                 `protobuf:"varint,10,opt,name=min_idle_conns,json=minIdleConns,proto3" json:"min_idle_conns,omitempty"`
 	Tls           *Data_Cache_Redis_Tls  `protobuf:"bytes,11,opt,name=tls,proto3" json:"tls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1038,7 +1098,7 @@ type Data_Cache_Redis struct {
 
 func (x *Data_Cache_Redis) Reset() {
 	*x = Data_Cache_Redis{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[17]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1050,7 +1110,7 @@ func (x *Data_Cache_Redis) String() string {
 func (*Data_Cache_Redis) ProtoMessage() {}
 
 func (x *Data_Cache_Redis) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[17]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1073,7 +1133,7 @@ func (x *Data_Cache_Redis) GetHost() string {
 	return ""
 }
 
-func (x *Data_Cache_Redis) GetPort() int32 {
+func (x *Data_Cache_Redis) GetPort() uint32 {
 	if x != nil {
 		return x.Port
 	}
@@ -1094,42 +1154,42 @@ func (x *Data_Cache_Redis) GetPassword() string {
 	return ""
 }
 
-func (x *Data_Cache_Redis) GetDb() int32 {
+func (x *Data_Cache_Redis) GetDb() uint32 {
 	if x != nil {
 		return x.Db
 	}
 	return 0
 }
 
-func (x *Data_Cache_Redis) GetDialTimeout() int64 {
+func (x *Data_Cache_Redis) GetDialTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.DialTimeout
 	}
-	return 0
+	return nil
 }
 
-func (x *Data_Cache_Redis) GetReadTimeout() int64 {
+func (x *Data_Cache_Redis) GetReadTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.ReadTimeout
 	}
-	return 0
+	return nil
 }
 
-func (x *Data_Cache_Redis) GetWriteTimeout() int64 {
+func (x *Data_Cache_Redis) GetWriteTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.WriteTimeout
 	}
-	return 0
+	return nil
 }
 
-func (x *Data_Cache_Redis) GetPoolSize() int32 {
+func (x *Data_Cache_Redis) GetPoolSize() uint32 {
 	if x != nil {
 		return x.PoolSize
 	}
 	return 0
 }
 
-func (x *Data_Cache_Redis) GetMinIdleConns() int32 {
+func (x *Data_Cache_Redis) GetMinIdleConns() uint32 {
 	if x != nil {
 		return x.MinIdleConns
 	}
@@ -1154,7 +1214,7 @@ type Data_Cache_Redis_Tls struct {
 
 func (x *Data_Cache_Redis_Tls) Reset() {
 	*x = Data_Cache_Redis_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[18]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1166,7 +1226,7 @@ func (x *Data_Cache_Redis_Tls) String() string {
 func (*Data_Cache_Redis_Tls) ProtoMessage() {}
 
 func (x *Data_Cache_Redis_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[18]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1217,7 +1277,7 @@ type Auth_Casdoor struct {
 
 func (x *Auth_Casdoor) Reset() {
 	*x = Auth_Casdoor{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[19]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1229,7 +1289,7 @@ func (x *Auth_Casdoor) String() string {
 func (*Auth_Casdoor) ProtoMessage() {}
 
 func (x *Auth_Casdoor) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[19]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1297,7 +1357,7 @@ type Observability_Trace struct {
 
 func (x *Observability_Trace) Reset() {
 	*x = Observability_Trace{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[20]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1309,7 +1369,7 @@ func (x *Observability_Trace) String() string {
 func (*Observability_Trace) ProtoMessage() {}
 
 func (x *Observability_Trace) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[20]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1349,7 +1409,7 @@ type Observability_Metric struct {
 
 func (x *Observability_Metric) Reset() {
 	*x = Observability_Metric{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[21]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1361,7 +1421,7 @@ func (x *Observability_Metric) String() string {
 func (*Observability_Metric) ProtoMessage() {}
 
 func (x *Observability_Metric) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[21]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1401,7 +1461,7 @@ type Observability_Logging struct {
 
 func (x *Observability_Logging) Reset() {
 	*x = Observability_Logging{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[22]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1413,7 +1473,7 @@ func (x *Observability_Logging) String() string {
 func (*Observability_Logging) ProtoMessage() {}
 
 func (x *Observability_Logging) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[22]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1454,7 +1514,7 @@ type Observability_Tls struct {
 
 func (x *Observability_Tls) Reset() {
 	*x = Observability_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[23]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1466,7 +1526,7 @@ func (x *Observability_Tls) String() string {
 func (*Observability_Tls) ProtoMessage() {}
 
 func (x *Observability_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[23]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1516,7 +1576,7 @@ type Discovery_Consul struct {
 
 func (x *Discovery_Consul) Reset() {
 	*x = Discovery_Consul{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[24]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1528,7 +1588,7 @@ func (x *Discovery_Consul) String() string {
 func (*Discovery_Consul) ProtoMessage() {}
 
 func (x *Discovery_Consul) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[24]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1590,7 +1650,7 @@ type Discovery_Consul_Tls struct {
 
 func (x *Discovery_Consul_Tls) Reset() {
 	*x = Discovery_Consul_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[25]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1602,7 +1662,7 @@ func (x *Discovery_Consul_Tls) String() string {
 func (*Discovery_Consul_Tls) ProtoMessage() {}
 
 func (x *Discovery_Consul_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[25]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1649,7 +1709,7 @@ type Discovery_Consul_Check struct {
 
 func (x *Discovery_Consul_Check) Reset() {
 	*x = Discovery_Consul_Check{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[26]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1661,7 +1721,7 @@ func (x *Discovery_Consul_Check) String() string {
 func (*Discovery_Consul_Check) ProtoMessage() {}
 
 func (x *Discovery_Consul_Check) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[26]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1701,7 +1761,7 @@ type Discovery_Consul_Check_TTL struct {
 
 func (x *Discovery_Consul_Check_TTL) Reset() {
 	*x = Discovery_Consul_Check_TTL{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[27]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1713,7 +1773,7 @@ func (x *Discovery_Consul_Check_TTL) String() string {
 func (*Discovery_Consul_Check_TTL) ProtoMessage() {}
 
 func (x *Discovery_Consul_Check_TTL) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[27]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1755,7 +1815,7 @@ type Search_ElasticSearch struct {
 
 func (x *Search_ElasticSearch) Reset() {
 	*x = Search_ElasticSearch{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[28]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1767,7 +1827,7 @@ func (x *Search_ElasticSearch) String() string {
 func (*Search_ElasticSearch) ProtoMessage() {}
 
 func (x *Search_ElasticSearch) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[28]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1822,7 +1882,7 @@ type Search_ElasticSearch_Tls struct {
 
 func (x *Search_ElasticSearch_Tls) Reset() {
 	*x = Search_ElasticSearch_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[29]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1834,7 +1894,7 @@ func (x *Search_ElasticSearch_Tls) String() string {
 func (*Search_ElasticSearch_Tls) ProtoMessage() {}
 
 func (x *Search_ElasticSearch_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[29]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1883,102 +1943,113 @@ const file_internal_conf_v1_conf_proto_rawDesc = "" +
 	"\robservability\x18\x04 \x01(\v2\x16.conf.v1.ObservabilityB\x06\xbaH\x03\xc8\x01\x00R\robservability\x128\n" +
 	"\tdiscovery\x18\x05 \x01(\v2\x12.conf.v1.DiscoveryB\x06\xbaH\x03\xc8\x01\x00R\tdiscovery\x12/\n" +
 	"\x06search\x18\x06 \x01(\v2\x0f.conf.v1.SearchB\x06\xbaH\x03\xc8\x01\x00R\x06search\x12&\n" +
-	"\x03log\x18\a \x01(\v2\f.conf.v1.LogB\x06\xbaH\x03\xc8\x01\x01R\x03log\"\xba\x03\n" +
+	"\x03log\x18\a \x01(\v2\f.conf.v1.LogB\x06\xbaH\x03\xc8\x01\x01R\x03log\"\x8d\x05\n" +
 	"\x03Log\x124\n" +
 	"\tframework\x18\x01 \x01(\v2\x16.conf.v1.Log.FrameworkR\tframework\x12:\n" +
 	"\vapplication\x18\x02 \x01(\v2\x18.conf.v1.Log.ApplicationR\vapplication\x12@\n" +
-	"\relasticsearch\x18\x03 \x01(\v2\x1a.conf.v1.Log.ElasticSearchR\relasticsearch\x1aa\n" +
-	"\tFramework\x12\x16\n" +
-	"\x06format\x18\x01 \x01(\tR\x06format\x12\x1b\n" +
-	"\tlog_level\x18\x02 \x01(\tR\blogLevel\x12\x1f\n" +
-	"\verror_level\x18\x03 \x01(\tR\n" +
-	"errorLevel\x1a;\n" +
-	"\vApplication\x12\x16\n" +
-	"\x06format\x18\x01 \x01(\tR\x06format\x12\x14\n" +
-	"\x05level\x18\x02 \x01(\tR\x05level\x1a_\n" +
+	"\relasticsearch\x18\x03 \x01(\v2\x1a.conf.v1.Log.ElasticSearchR\relasticsearch\x1a\xe5\x01\n" +
+	"\tFramework\x12,\n" +
+	"\x06format\x18\x01 \x01(\tB\x14\xbaH\x11r\x0fR\aconsoleR\x04jsonR\x06format\x12R\n" +
+	"\tlog_level\x18\x02 \x01(\tB5\xbaH2r0R\x05debugR\x04infoR\x04warnR\x05errorR\x06dpanicR\x05panicR\x05fatalR\blogLevel\x12V\n" +
+	"\verror_level\x18\x03 \x01(\tB5\xbaH2r0R\x05debugR\x04infoR\x04warnR\x05errorR\x06dpanicR\x05panicR\x05fatalR\n" +
+	"errorLevel\x1a\x88\x01\n" +
+	"\vApplication\x12,\n" +
+	"\x06format\x18\x01 \x01(\tB\x14\xbaH\x11r\x0fR\aconsoleR\x04jsonR\x06format\x12K\n" +
+	"\x05level\x18\x02 \x01(\tB5\xbaH2r0R\x05debugR\x04infoR\x04warnR\x05errorR\x06dpanicR\x05panicR\x05fatalR\x05level\x1a_\n" +
 	"\rElasticSearch\x12%\n" +
 	"\x0eenable_request\x18\x01 \x01(\bR\renableRequest\x12'\n" +
-	"\x0fenable_response\x18\x02 \x01(\bR\x0eenableResponse\"\x91\x01\n" +
-	"\x06Server\x12\x12\n" +
-	"\x04addr\x18\x01 \x01(\tR\x04addr\x12\x18\n" +
-	"\atimeout\x18\x02 \x01(\x03R\atimeout\x12(\n" +
-	"\x04cors\x18\x03 \x01(\v2\x14.conf.v1.Server.CorsR\x04cors\x1a/\n" +
-	"\x04Cors\x12'\n" +
-	"\x0fallowed_origins\x18\x01 \x03(\tR\x0eallowedOrigins\"\xce\t\n" +
+	"\x0fenable_response\x18\x02 \x01(\bR\x0eenableResponse\"\xd8\x03\n" +
+	"\x06Server\x122\n" +
+	"\x04addr\x18\x01 \x01(\tB\x1e\xbaH\x1br\x19\x92\x02\a0.0.0.0\x92\x02\tlocalhost\xa8\x01\x01R\x04addr\x12(\n" +
+	"\x04http\x18\x02 \x01(\v2\x14.conf.v1.Server.HTTPR\x04http\x12(\n" +
+	"\x04cors\x18\x03 \x01(\v2\x14.conf.v1.Server.CorsR\x04cors\x1a\xf2\x01\n" +
+	"\x04HTTP\x12L\n" +
+	"\fread_timeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationB\x0e\xbaH\v\xaa\x01\bJ\x02\b\x052\x02\b\x01R\vreadTimeout\x12N\n" +
+	"\rwrite_timeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationB\x0e\xbaH\v\xaa\x01\bJ\x02\b\x052\x02\b\x01R\fwriteTimeout\x12L\n" +
+	"\fidle_timeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationB\x0e\xbaH\v\xaa\x01\bJ\x02\b\x052\x02\b\x01R\vidleTimeout\x1aQ\n" +
+	"\x04Cors\x12I\n" +
+	"\x0fallowed_origins\x18\x01 \x03(\tB \xbaH\x1dr\x1b\x92\x02\x15http://localhost:3000\x80\x02\x01R\x0eallowedOrigins\"\xd0\r\n" +
 	"\x04Data\x122\n" +
 	"\bdatabase\x18\x01 \x01(\v2\x16.conf.v1.Data.DatabaseR\bdatabase\x12)\n" +
-	"\x05cache\x18\x02 \x01(\v2\x13.conf.v1.Data.CacheR\x05cache\x1a\xea\x04\n" +
+	"\x05cache\x18\x02 \x01(\v2\x13.conf.v1.Data.CacheR\x05cache\x1a\xb7\a\n" +
 	"\bDatabase\x12;\n" +
-	"\bpostgres\x18\x01 \x01(\v2\x1f.conf.v1.Data.Database.PostgresR\bpostgres\x1a\xa0\x04\n" +
-	"\bPostgres\x12\x12\n" +
-	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x12\n" +
-	"\x04user\x18\x03 \x01(\tR\x04user\x12\x1a\n" +
-	"\bpassword\x18\x04 \x01(\tR\bpassword\x12\x17\n" +
-	"\adb_name\x18\x05 \x01(\tR\x06dbName\x12\x19\n" +
-	"\bssl_mode\x18\x06 \x01(\tR\asslMode\x12\x1a\n" +
-	"\btimezone\x18\a \x01(\tR\btimezone\x12@\n" +
+	"\bpostgres\x18\x01 \x01(\v2\x1f.conf.v1.Data.Database.PostgresR\bpostgres\x1a\xed\x06\n" +
+	"\bPostgres\x12(\n" +
+	"\x04host\x18\x01 \x01(\tB\x14\xbaH\x11r\x0f\x92\x02\tlocalhost\xa8\x01\x01R\x04host\x12\x1c\n" +
+	"\x04port\x18\x02 \x01(\rB\b\xbaH\x05\x1a\x03@\xb8*R\x04port\x12$\n" +
+	"\x04user\x18\x03 \x01(\tB\x10\xbaH\rr\v\x92\x02\bpostgresR\x04user\x12,\n" +
+	"\bpassword\x18\x04 \x01(\tB\x10\xbaH\rr\v\x92\x02\bpostgresR\bpassword\x12)\n" +
+	"\adb_name\x18\x05 \x01(\tB\x10\xbaH\rr\v\x92\x02\bpostgresR\x06dbName\x127\n" +
+	"\btimezone\x18\a \x01(\tB\x1b\xbaH\x18r\x16\x92\x02\rAsia/Shanghai\x92\x02\x03UTCR\btimezone\x12@\n" +
 	"\x04pool\x18\b \x01(\v2,.conf.v1.Data.Database.Postgres.DatabasePoolR\x04pool\x125\n" +
-	"\x03tls\x18\t \x01(\v2#.conf.v1.Data.Database.Postgres.TlsR\x03tls\x1a\xa1\x01\n" +
-	"\fDatabasePool\x12\x1b\n" +
-	"\tmax_conns\x18\x01 \x01(\x05R\bmaxConns\x12\x1b\n" +
-	"\tmin_conns\x18\x02 \x01(\x05R\bminConns\x12*\n" +
-	"\x11max_conn_lifetime\x18\x03 \x01(\x03R\x0fmaxConnLifetime\x12+\n" +
-	"\x12max_conn_idle_time\x18\x04 \x01(\x03R\x0fmaxConnIdleTime\x1aO\n" +
+	"\x03tls\x18\t \x01(\v2#.conf.v1.Data.Database.Postgres.TlsR\x03tls\x1a\xcb\x02\n" +
+	"\fDatabasePool\x12$\n" +
+	"\tmax_conns\x18\x01 \x01(\rB\a\xbaH\x04\x1a\x02(\x01R\bmaxConns\x12$\n" +
+	"\tmin_conns\x18\x02 \x01(\rB\a\xbaH\x04\x1a\x02(\x01R\bminConns\x12Q\n" +
+	"\x11max_conn_lifetime\x18\x03 \x01(\v2\x19.google.protobuf.DurationB\n" +
+	"\xbaH\a\xaa\x01\x042\x02\b\x01R\x0fmaxConnLifetime\x12R\n" +
+	"\x12max_conn_idle_time\x18\x04 \x01(\v2\x19.google.protobuf.DurationB\n" +
+	"\xbaH\a\xaa\x01\x042\x02\b\x01R\x0fmaxConnIdleTime\x12H\n" +
+	"\fping_timeout\x18\x05 \x01(\v2\x19.google.protobuf.DurationB\n" +
+	"\xbaH\a\xaa\x01\x042\x02\b\x01R\vpingTimeout\x1a\x99\x01\n" +
 	"\x03Tls\x12\x16\n" +
-	"\x06enable\x18\x01 \x01(\bR\x06enable\x12\x19\n" +
-	"\bssl_mode\x18\x02 \x01(\tR\asslMode\x12\x15\n" +
-	"\x06ca_pem\x18\x03 \x01(\tR\x05caPem\x1a\xf9\x03\n" +
+	"\x06enable\x18\x01 \x01(\bR\x06enable\x12c\n" +
+	"\bssl_mode\x18\x06 \x01(\tBH\xbaHErCR\adisableR\x05allowR\x06preferR\arequireR\tverify-caR\vverify-full\x92\x02\adisableR\asslMode\x12\x15\n" +
+	"\x06ca_pem\x18\x03 \x01(\tR\x05caPem\x1a\xae\x05\n" +
 	"\x05Cache\x12/\n" +
-	"\x05redis\x18\x01 \x01(\v2\x19.conf.v1.Data.Cache.RedisR\x05redis\x1a\xbe\x03\n" +
-	"\x05Redis\x12\x12\n" +
-	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\x12\x1a\n" +
-	"\bpassword\x18\x04 \x01(\tR\bpassword\x12\x0e\n" +
-	"\x02db\x18\x05 \x01(\x05R\x02db\x12!\n" +
-	"\fdial_timeout\x18\x06 \x01(\x03R\vdialTimeout\x12!\n" +
-	"\fread_timeout\x18\a \x01(\x03R\vreadTimeout\x12#\n" +
-	"\rwrite_timeout\x18\b \x01(\x03R\fwriteTimeout\x12\x1b\n" +
-	"\tpool_size\x18\t \x01(\x05R\bpoolSize\x12$\n" +
+	"\x05redis\x18\x01 \x01(\v2\x19.conf.v1.Data.Cache.RedisR\x05redis\x1a\xf3\x04\n" +
+	"\x05Redis\x12\x1c\n" +
+	"\x04host\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xa8\x01\x01R\x04host\x12\x1c\n" +
+	"\x04port\x18\x02 \x01(\rB\b\xbaH\x05\x1a\x03@\xb8*R\x04port\x12+\n" +
+	"\busername\x18\x03 \x01(\tB\x0f\xbaH\fr\n" +
+	"\x92\x02\adefaultR\busername\x12,\n" +
+	"\bpassword\x18\x04 \x01(\tB\x10\xbaH\rr\v\x92\x02\bpasswordR\bpassword\x12\x0e\n" +
+	"\x02db\x18\x05 \x01(\rR\x02db\x12H\n" +
+	"\fdial_timeout\x18\x06 \x01(\v2\x19.google.protobuf.DurationB\n" +
+	"\xbaH\a\xaa\x01\x042\x02\b\x01R\vdialTimeout\x12H\n" +
+	"\fread_timeout\x18\a \x01(\v2\x19.google.protobuf.DurationB\n" +
+	"\xbaH\a\xaa\x01\x042\x02\b\x01R\vreadTimeout\x12J\n" +
+	"\rwrite_timeout\x18\b \x01(\v2\x19.google.protobuf.DurationB\n" +
+	"\xbaH\a\xaa\x01\x042\x02\b\x01R\fwriteTimeout\x12\x1b\n" +
+	"\tpool_size\x18\t \x01(\rR\bpoolSize\x12-\n" +
 	"\x0emin_idle_conns\x18\n" +
-	" \x01(\x05R\fminIdleConns\x12/\n" +
+	" \x01(\rB\a\xbaH\x04\x1a\x02(\x01R\fminIdleConns\x12/\n" +
 	"\x03tls\x18\v \x01(\v2\x1d.conf.v1.Data.Cache.Redis.TlsR\x03tls\x1af\n" +
 	"\x03Tls\x12\x16\n" +
 	"\x06enable\x18\x01 \x01(\bR\x06enable\x12\x15\n" +
 	"\x06ca_pem\x18\x02 \x01(\tR\x05caPem\x120\n" +
-	"\x14insecure_skip_verify\x18\x03 \x01(\bR\x12insecureSkipVerify\"\x9b\x02\n" +
+	"\x14insecure_skip_verify\x18\x03 \x01(\bR\x12insecureSkipVerify\"\xa5\x02\n" +
 	"\x04Auth\x12/\n" +
-	"\acasdoor\x18\x01 \x01(\v2\x15.conf.v1.Auth.CasdoorR\acasdoor\x1a\xe1\x01\n" +
-	"\aCasdoor\x12\x1a\n" +
-	"\bendpoint\x18\x01 \x01(\tR\bendpoint\x12\x1b\n" +
+	"\acasdoor\x18\x01 \x01(\v2\x15.conf.v1.Auth.CasdoorR\acasdoor\x1a\xeb\x01\n" +
+	"\aCasdoor\x12$\n" +
+	"\bendpoint\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x80\x02\x01R\bendpoint\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
 	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12+\n" +
 	"\x11organization_name\x18\x04 \x01(\tR\x10organizationName\x12)\n" +
 	"\x10application_name\x18\x05 \x01(\tR\x0fapplicationName\x12 \n" +
-	"\vcertificate\x18\x06 \x01(\tR\vcertificate\"\xa8\x04\n" +
+	"\vcertificate\x18\x06 \x01(\tR\vcertificate\"\xf9\x04\n" +
 	"\rObservability\x122\n" +
 	"\x05trace\x18\x01 \x01(\v2\x1c.conf.v1.Observability.TraceR\x05trace\x125\n" +
 	"\x06metric\x18\x02 \x01(\v2\x1d.conf.v1.Observability.MetricR\x06metric\x120\n" +
 	"\x03log\x18\x03 \x01(\v2\x1e.conf.v1.Observability.LoggingR\x03log\x12\x16\n" +
-	"\x06enable\x18\x04 \x01(\bR\x06enable\x1aQ\n" +
-	"\x05Trace\x12\x1a\n" +
-	"\bendpoint\x18\x01 \x01(\tR\bendpoint\x12,\n" +
-	"\x03tls\x18\x02 \x01(\v2\x1a.conf.v1.Observability.TlsR\x03tls\x1aR\n" +
-	"\x06Metric\x12\x1a\n" +
-	"\bendpoint\x18\x01 \x01(\tR\bendpoint\x12,\n" +
-	"\x03tls\x18\x02 \x01(\v2\x1a.conf.v1.Observability.TlsR\x03tls\x1aS\n" +
-	"\aLogging\x12\x1a\n" +
-	"\bendpoint\x18\x01 \x01(\tR\bendpoint\x12,\n" +
+	"\x06enable\x18\x04 \x01(\bR\x06enable\x1al\n" +
+	"\x05Trace\x125\n" +
+	"\bendpoint\x18\x01 \x01(\tB\x19\xbaH\x16r\x14\x92\x02\x0elocalhost:4318\x80\x02\x01R\bendpoint\x12,\n" +
+	"\x03tls\x18\x02 \x01(\v2\x1a.conf.v1.Observability.TlsR\x03tls\x1am\n" +
+	"\x06Metric\x125\n" +
+	"\bendpoint\x18\x01 \x01(\tB\x19\xbaH\x16r\x14\x92\x02\x0elocalhost:4318\x80\x02\x01R\bendpoint\x12,\n" +
+	"\x03tls\x18\x02 \x01(\v2\x1a.conf.v1.Observability.TlsR\x03tls\x1an\n" +
+	"\aLogging\x125\n" +
+	"\bendpoint\x18\x01 \x01(\tB\x19\xbaH\x16r\x14\x92\x02\x0elocalhost:4318\x80\x02\x01R\bendpoint\x12,\n" +
 	"\x03tls\x18\x02 \x01(\v2\x1a.conf.v1.Observability.TlsR\x03tls\x1af\n" +
 	"\x03Tls\x12\x16\n" +
 	"\x06enable\x18\x01 \x01(\bR\x06enable\x12\x15\n" +
 	"\x06ca_pem\x18\x02 \x01(\tR\x05caPem\x120\n" +
-	"\x14insecure_skip_verify\x18\x03 \x01(\bR\x12insecureSkipVerify\"\xd7\x04\n" +
+	"\x14insecure_skip_verify\x18\x03 \x01(\bR\x12insecureSkipVerify\"\xfe\x04\n" +
 	"\tDiscovery\x121\n" +
-	"\x06consul\x18\x01 \x01(\v2\x19.conf.v1.Discovery.ConsulR\x06consul\x1a\x96\x04\n" +
-	"\x06Consul\x12\x12\n" +
-	"\x04addr\x18\x01 \x01(\tR\x04addr\x12\x16\n" +
+	"\x06consul\x18\x01 \x01(\v2\x19.conf.v1.Discovery.ConsulR\x06consul\x1a\xbd\x04\n" +
+	"\x06Consul\x12-\n" +
+	"\x04addr\x18\x01 \x01(\tB\x19\xbaH\x16r\x14\x92\x02\x0elocalhost:4317\x80\x02\x01R\x04addr\x12\x16\n" +
 	"\x06scheme\x18\x02 \x01(\tR\x06scheme\x12!\n" +
 	"\fhealth_check\x18\x03 \x01(\bR\vhealthCheck\x12/\n" +
 	"\x03tls\x18\x04 \x01(\v2\x1d.conf.v1.Discovery.Consul.TlsR\x03tls\x125\n" +
@@ -1986,18 +2057,20 @@ const file_internal_conf_v1_conf_proto_rawDesc = "" +
 	"\x03Tls\x12\x16\n" +
 	"\x06enable\x18\x01 \x01(\bR\x06enable\x120\n" +
 	"\x14insecure_skip_verify\x18\x02 \x01(\bR\x12insecureSkipVerify\x12\x15\n" +
-	"\x06ca_pem\x18\x03 \x01(\tR\x05caPem\x1a\xec\x01\n" +
+	"\x06ca_pem\x18\x03 \x01(\tR\x05caPem\x1a\xf8\x01\n" +
 	"\x05Check\x125\n" +
 	"\x03ttl\x18\x01 \x01(\v2#.conf.v1.Discovery.Consul.Check.TTLR\x03ttl\x12I\n" +
-	"!deregister_critical_service_after\x18\x02 \x01(\tR\x1ederegisterCriticalServiceAfter\x1aa\n" +
+	"!deregister_critical_service_after\x18\x02 \x01(\tR\x1ederegisterCriticalServiceAfter\x1am\n" +
 	"\x03TTL\x12\x1a\n" +
-	"\bduration\x18\x01 \x01(\tR\bduration\x12>\n" +
-	"\rping_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\fpingInterval\"\xd3\x02\n" +
+	"\bduration\x18\x01 \x01(\tR\bduration\x12J\n" +
+	"\rping_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationB\n" +
+	"\xbaH\a\xaa\x01\x042\x02\b\x05R\fpingInterval\"\x8b\x03\n" +
 	"\x06Search\x12D\n" +
-	"\x0eelastic_search\x18\x01 \x01(\v2\x1d.conf.v1.Search.ElasticSearchR\relasticSearch\x1a\x82\x02\n" +
-	"\rElasticSearch\x12\x1c\n" +
-	"\taddresses\x18\x01 \x03(\tR\taddresses\x12\x1a\n" +
-	"\busername\x18\x02 \x01(\tR\busername\x12\x1a\n" +
+	"\x0eelastic_search\x18\x01 \x01(\v2\x1d.conf.v1.Search.ElasticSearchR\relasticSearch\x1a\xba\x02\n" +
+	"\rElasticSearch\x12C\n" +
+	"\taddresses\x18\x01 \x03(\tB%\xbaH\"r \x92\x02\x1ahttp://es.example.com:9200\x80\x02\x01R\taddresses\x12+\n" +
+	"\busername\x18\x02 \x01(\tB\x0f\xbaH\fr\n" +
+	"\x92\x02\aelasticR\busername\x12\x1a\n" +
 	"\bpassword\x18\x03 \x01(\tR\bpassword\x123\n" +
 	"\x03tls\x18\x04 \x01(\v2!.conf.v1.Search.ElasticSearch.TlsR\x03tls\x1af\n" +
 	"\x03Tls\x12\x16\n" +
@@ -2018,7 +2091,7 @@ func file_internal_conf_v1_conf_proto_rawDescGZIP() []byte {
 	return file_internal_conf_v1_conf_proto_rawDescData
 }
 
-var file_internal_conf_v1_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_internal_conf_v1_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_internal_conf_v1_conf_proto_goTypes = []any{
 	(*Bootstrap)(nil),                           // 0: conf.v1.Bootstrap
 	(*Log)(nil),                                 // 1: conf.v1.Log
@@ -2031,26 +2104,27 @@ var file_internal_conf_v1_conf_proto_goTypes = []any{
 	(*Log_Framework)(nil),                       // 8: conf.v1.Log.Framework
 	(*Log_Application)(nil),                     // 9: conf.v1.Log.Application
 	(*Log_ElasticSearch)(nil),                   // 10: conf.v1.Log.ElasticSearch
-	(*Server_Cors)(nil),                         // 11: conf.v1.Server.Cors
-	(*Data_Database)(nil),                       // 12: conf.v1.Data.Database
-	(*Data_Cache)(nil),                          // 13: conf.v1.Data.Cache
-	(*Data_Database_Postgres)(nil),              // 14: conf.v1.Data.Database.Postgres
-	(*Data_Database_Postgres_DatabasePool)(nil), // 15: conf.v1.Data.Database.Postgres.DatabasePool
-	(*Data_Database_Postgres_Tls)(nil),          // 16: conf.v1.Data.Database.Postgres.Tls
-	(*Data_Cache_Redis)(nil),                    // 17: conf.v1.Data.Cache.Redis
-	(*Data_Cache_Redis_Tls)(nil),                // 18: conf.v1.Data.Cache.Redis.Tls
-	(*Auth_Casdoor)(nil),                        // 19: conf.v1.Auth.Casdoor
-	(*Observability_Trace)(nil),                 // 20: conf.v1.Observability.Trace
-	(*Observability_Metric)(nil),                // 21: conf.v1.Observability.Metric
-	(*Observability_Logging)(nil),               // 22: conf.v1.Observability.Logging
-	(*Observability_Tls)(nil),                   // 23: conf.v1.Observability.Tls
-	(*Discovery_Consul)(nil),                    // 24: conf.v1.Discovery.Consul
-	(*Discovery_Consul_Tls)(nil),                // 25: conf.v1.Discovery.Consul.Tls
-	(*Discovery_Consul_Check)(nil),              // 26: conf.v1.Discovery.Consul.Check
-	(*Discovery_Consul_Check_TTL)(nil),          // 27: conf.v1.Discovery.Consul.Check.TTL
-	(*Search_ElasticSearch)(nil),                // 28: conf.v1.Search.ElasticSearch
-	(*Search_ElasticSearch_Tls)(nil),            // 29: conf.v1.Search.ElasticSearch.Tls
-	(*durationpb.Duration)(nil),                 // 30: google.protobuf.Duration
+	(*Server_HTTP)(nil),                         // 11: conf.v1.Server.HTTP
+	(*Server_Cors)(nil),                         // 12: conf.v1.Server.Cors
+	(*Data_Database)(nil),                       // 13: conf.v1.Data.Database
+	(*Data_Cache)(nil),                          // 14: conf.v1.Data.Cache
+	(*Data_Database_Postgres)(nil),              // 15: conf.v1.Data.Database.Postgres
+	(*Data_Database_Postgres_DatabasePool)(nil), // 16: conf.v1.Data.Database.Postgres.DatabasePool
+	(*Data_Database_Postgres_Tls)(nil),          // 17: conf.v1.Data.Database.Postgres.Tls
+	(*Data_Cache_Redis)(nil),                    // 18: conf.v1.Data.Cache.Redis
+	(*Data_Cache_Redis_Tls)(nil),                // 19: conf.v1.Data.Cache.Redis.Tls
+	(*Auth_Casdoor)(nil),                        // 20: conf.v1.Auth.Casdoor
+	(*Observability_Trace)(nil),                 // 21: conf.v1.Observability.Trace
+	(*Observability_Metric)(nil),                // 22: conf.v1.Observability.Metric
+	(*Observability_Logging)(nil),               // 23: conf.v1.Observability.Logging
+	(*Observability_Tls)(nil),                   // 24: conf.v1.Observability.Tls
+	(*Discovery_Consul)(nil),                    // 25: conf.v1.Discovery.Consul
+	(*Discovery_Consul_Tls)(nil),                // 26: conf.v1.Discovery.Consul.Tls
+	(*Discovery_Consul_Check)(nil),              // 27: conf.v1.Discovery.Consul.Check
+	(*Discovery_Consul_Check_TTL)(nil),          // 28: conf.v1.Discovery.Consul.Check.TTL
+	(*Search_ElasticSearch)(nil),                // 29: conf.v1.Search.ElasticSearch
+	(*Search_ElasticSearch_Tls)(nil),            // 30: conf.v1.Search.ElasticSearch.Tls
+	(*durationpb.Duration)(nil),                 // 31: google.protobuf.Duration
 }
 var file_internal_conf_v1_conf_proto_depIdxs = []int32{
 	2,  // 0: conf.v1.Bootstrap.server:type_name -> conf.v1.Server
@@ -2063,33 +2137,43 @@ var file_internal_conf_v1_conf_proto_depIdxs = []int32{
 	8,  // 7: conf.v1.Log.framework:type_name -> conf.v1.Log.Framework
 	9,  // 8: conf.v1.Log.application:type_name -> conf.v1.Log.Application
 	10, // 9: conf.v1.Log.elasticsearch:type_name -> conf.v1.Log.ElasticSearch
-	11, // 10: conf.v1.Server.cors:type_name -> conf.v1.Server.Cors
-	12, // 11: conf.v1.Data.database:type_name -> conf.v1.Data.Database
-	13, // 12: conf.v1.Data.cache:type_name -> conf.v1.Data.Cache
-	19, // 13: conf.v1.Auth.casdoor:type_name -> conf.v1.Auth.Casdoor
-	20, // 14: conf.v1.Observability.trace:type_name -> conf.v1.Observability.Trace
-	21, // 15: conf.v1.Observability.metric:type_name -> conf.v1.Observability.Metric
-	22, // 16: conf.v1.Observability.log:type_name -> conf.v1.Observability.Logging
-	24, // 17: conf.v1.Discovery.consul:type_name -> conf.v1.Discovery.Consul
-	28, // 18: conf.v1.Search.elastic_search:type_name -> conf.v1.Search.ElasticSearch
-	14, // 19: conf.v1.Data.Database.postgres:type_name -> conf.v1.Data.Database.Postgres
-	17, // 20: conf.v1.Data.Cache.redis:type_name -> conf.v1.Data.Cache.Redis
-	15, // 21: conf.v1.Data.Database.Postgres.pool:type_name -> conf.v1.Data.Database.Postgres.DatabasePool
-	16, // 22: conf.v1.Data.Database.Postgres.tls:type_name -> conf.v1.Data.Database.Postgres.Tls
-	18, // 23: conf.v1.Data.Cache.Redis.tls:type_name -> conf.v1.Data.Cache.Redis.Tls
-	23, // 24: conf.v1.Observability.Trace.tls:type_name -> conf.v1.Observability.Tls
-	23, // 25: conf.v1.Observability.Metric.tls:type_name -> conf.v1.Observability.Tls
-	23, // 26: conf.v1.Observability.Logging.tls:type_name -> conf.v1.Observability.Tls
-	25, // 27: conf.v1.Discovery.Consul.tls:type_name -> conf.v1.Discovery.Consul.Tls
-	26, // 28: conf.v1.Discovery.Consul.check:type_name -> conf.v1.Discovery.Consul.Check
-	27, // 29: conf.v1.Discovery.Consul.Check.ttl:type_name -> conf.v1.Discovery.Consul.Check.TTL
-	30, // 30: conf.v1.Discovery.Consul.Check.TTL.ping_interval:type_name -> google.protobuf.Duration
-	29, // 31: conf.v1.Search.ElasticSearch.tls:type_name -> conf.v1.Search.ElasticSearch.Tls
-	32, // [32:32] is the sub-list for method output_type
-	32, // [32:32] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	11, // 10: conf.v1.Server.http:type_name -> conf.v1.Server.HTTP
+	12, // 11: conf.v1.Server.cors:type_name -> conf.v1.Server.Cors
+	13, // 12: conf.v1.Data.database:type_name -> conf.v1.Data.Database
+	14, // 13: conf.v1.Data.cache:type_name -> conf.v1.Data.Cache
+	20, // 14: conf.v1.Auth.casdoor:type_name -> conf.v1.Auth.Casdoor
+	21, // 15: conf.v1.Observability.trace:type_name -> conf.v1.Observability.Trace
+	22, // 16: conf.v1.Observability.metric:type_name -> conf.v1.Observability.Metric
+	23, // 17: conf.v1.Observability.log:type_name -> conf.v1.Observability.Logging
+	25, // 18: conf.v1.Discovery.consul:type_name -> conf.v1.Discovery.Consul
+	29, // 19: conf.v1.Search.elastic_search:type_name -> conf.v1.Search.ElasticSearch
+	31, // 20: conf.v1.Server.HTTP.read_timeout:type_name -> google.protobuf.Duration
+	31, // 21: conf.v1.Server.HTTP.write_timeout:type_name -> google.protobuf.Duration
+	31, // 22: conf.v1.Server.HTTP.idle_timeout:type_name -> google.protobuf.Duration
+	15, // 23: conf.v1.Data.Database.postgres:type_name -> conf.v1.Data.Database.Postgres
+	18, // 24: conf.v1.Data.Cache.redis:type_name -> conf.v1.Data.Cache.Redis
+	16, // 25: conf.v1.Data.Database.Postgres.pool:type_name -> conf.v1.Data.Database.Postgres.DatabasePool
+	17, // 26: conf.v1.Data.Database.Postgres.tls:type_name -> conf.v1.Data.Database.Postgres.Tls
+	31, // 27: conf.v1.Data.Database.Postgres.DatabasePool.max_conn_lifetime:type_name -> google.protobuf.Duration
+	31, // 28: conf.v1.Data.Database.Postgres.DatabasePool.max_conn_idle_time:type_name -> google.protobuf.Duration
+	31, // 29: conf.v1.Data.Database.Postgres.DatabasePool.ping_timeout:type_name -> google.protobuf.Duration
+	31, // 30: conf.v1.Data.Cache.Redis.dial_timeout:type_name -> google.protobuf.Duration
+	31, // 31: conf.v1.Data.Cache.Redis.read_timeout:type_name -> google.protobuf.Duration
+	31, // 32: conf.v1.Data.Cache.Redis.write_timeout:type_name -> google.protobuf.Duration
+	19, // 33: conf.v1.Data.Cache.Redis.tls:type_name -> conf.v1.Data.Cache.Redis.Tls
+	24, // 34: conf.v1.Observability.Trace.tls:type_name -> conf.v1.Observability.Tls
+	24, // 35: conf.v1.Observability.Metric.tls:type_name -> conf.v1.Observability.Tls
+	24, // 36: conf.v1.Observability.Logging.tls:type_name -> conf.v1.Observability.Tls
+	26, // 37: conf.v1.Discovery.Consul.tls:type_name -> conf.v1.Discovery.Consul.Tls
+	27, // 38: conf.v1.Discovery.Consul.check:type_name -> conf.v1.Discovery.Consul.Check
+	28, // 39: conf.v1.Discovery.Consul.Check.ttl:type_name -> conf.v1.Discovery.Consul.Check.TTL
+	31, // 40: conf.v1.Discovery.Consul.Check.TTL.ping_interval:type_name -> google.protobuf.Duration
+	30, // 41: conf.v1.Search.ElasticSearch.tls:type_name -> conf.v1.Search.ElasticSearch.Tls
+	42, // [42:42] is the sub-list for method output_type
+	42, // [42:42] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_internal_conf_v1_conf_proto_init() }
@@ -2103,7 +2187,7 @@ func file_internal_conf_v1_conf_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_conf_v1_conf_proto_rawDesc), len(file_internal_conf_v1_conf_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   30,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -40,7 +40,6 @@ type contextTxKey struct{}
 // Data 包含所有数据源的客户端
 type Data struct {
 	db           *pgxpool.Pool
-	pgx          *pgxpool.Pool
 	rdb          *redis.Client
 	auth         *casdoorsdk.Client
 	es           *elasticsearch.TypedClient
@@ -52,7 +51,6 @@ type Data struct {
 func NewData(db *pgxpool.Pool, rdb *redis.Client, auth *casdoorsdk.Client, es *elasticsearch.TypedClient, logger *zap.Logger) *Data {
 	return &Data{
 		db:   db,
-		pgx:  db,
 		rdb:  rdb,
 		auth: auth,
 		es:   es,
@@ -99,7 +97,7 @@ func (d *Data) ExecTx(ctx context.Context, fn func(context.Context) error) error
 	}
 
 	d.log.Info("begin transaction")
-	tx, err := d.pgx.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := d.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin tx failed: %w", err)
 	}

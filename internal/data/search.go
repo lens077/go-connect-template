@@ -4,12 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v9"
 	"github.com/elastic/go-elasticsearch/v9/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/lens077/go-connect-template/internal/biz"
-	"github.com/redis/go-redis/v9"
-
 	// "github.com/lens077/go-connect-template/internal/data/models"
 	"context"
 
@@ -20,17 +17,15 @@ var _ biz.SearchRepo = (*searchRepo)(nil)
 
 type searchRepo struct {
 	// queries *models.Queries
-	es  *elasticsearch.TypedClient
-	rdb *redis.Client
-	log *zap.Logger
+	data *Data
+	log  *zap.Logger
 }
 
-func NewSearchRepo(data *Data, logger *zap.Logger, es *elasticsearch.TypedClient) biz.SearchRepo {
+func NewSearchRepo(data *Data, logger *zap.Logger) biz.SearchRepo {
 	return &searchRepo{
 		// queries: models.New(data.db),
-		es:  es,
-		rdb: data.rdb,
-		log: logger,
+		data: data,
+		log:  logger,
 	}
 }
 
@@ -44,7 +39,7 @@ func (u searchRepo) Search(ctx context.Context, req biz.SearchRequest) (*biz.Sea
 		"skus.attributes.*", // 对应skus.attributes
 	}
 
-	res, err := u.es.Search().Index(req.Index).Request(&search.Request{
+	res, err := u.data.es.Search().Index(req.Index).Request(&search.Request{
 		Query: &types.Query{
 			MultiMatch: &types.MultiMatchQuery{
 				Query:  req.Name,
