@@ -14,6 +14,8 @@ import (
 	"github.com/rs/cors"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 var Module = fx.Module("server",
@@ -56,6 +58,11 @@ func NewHTTPServer(
 
 	// 构建处理器链
 	handlerChain := withCORS(mux, cfg.Server.Cors.AllowedOrigins)
+
+	// 配置 HTTP/2 (H2C - 明文 HTTP/2)
+	h2s := &http2.Server{}
+	// 使用 h2c 包装处理器，支持同时处理 HTTP/1.1 和 HTTP/2
+	handlerChain = h2c.NewHandler(handlerChain, h2s)
 
 	server := &http.Server{
 		Addr:         cfg.Server.Addr,
