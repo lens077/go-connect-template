@@ -32,6 +32,7 @@ type Bootstrap struct {
 	Discovery     *Discovery             `protobuf:"bytes,5,opt,name=discovery,proto3" json:"discovery,omitempty"`
 	Search        *Search                `protobuf:"bytes,6,opt,name=search,proto3" json:"search,omitempty"`
 	Log           *Log                   `protobuf:"bytes,7,opt,name=log,proto3" json:"log,omitempty"`
+	Store         *Store                 `protobuf:"bytes,8,opt,name=store,proto3" json:"store,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -111,6 +112,13 @@ func (x *Bootstrap) GetSearch() *Search {
 func (x *Bootstrap) GetLog() *Log {
 	if x != nil {
 		return x.Log
+	}
+	return nil
+}
+
+func (x *Bootstrap) GetStore() *Store {
+	if x != nil {
+		return x.Store
 	}
 	return nil
 }
@@ -487,6 +495,52 @@ func (x *Search) GetElasticSearch() *Search_ElasticSearch {
 	return nil
 }
 
+// Store 对象存储。只配「对外访问域名」,不配 AK/SK ——
+// 上传走各服务自己的 SDK 凭据,这里只负责把存储 key 拼成可访问的 URL。
+type Store struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Minio         *Store_Minio           `protobuf:"bytes,1,opt,name=minio,proto3" json:"minio,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Store) Reset() {
+	*x = Store{}
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Store) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Store) ProtoMessage() {}
+
+func (x *Store) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Store.ProtoReflect.Descriptor instead.
+func (*Store) Descriptor() ([]byte, []int) {
+	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *Store) GetMinio() *Store_Minio {
+	if x != nil {
+		return x.Minio
+	}
+	return nil
+}
+
 type Log_Framework struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Format        string                 `protobuf:"bytes,1,opt,name=format,proto3" json:"format,omitempty"`
@@ -498,7 +552,7 @@ type Log_Framework struct {
 
 func (x *Log_Framework) Reset() {
 	*x = Log_Framework{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[8]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -510,7 +564,7 @@ func (x *Log_Framework) String() string {
 func (*Log_Framework) ProtoMessage() {}
 
 func (x *Log_Framework) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[8]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -557,7 +611,7 @@ type Log_Application struct {
 
 func (x *Log_Application) Reset() {
 	*x = Log_Application{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[9]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -569,7 +623,7 @@ func (x *Log_Application) String() string {
 func (*Log_Application) ProtoMessage() {}
 
 func (x *Log_Application) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[9]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -609,7 +663,7 @@ type Log_ElasticSearch struct {
 
 func (x *Log_ElasticSearch) Reset() {
 	*x = Log_ElasticSearch{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[10]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -621,7 +675,7 @@ func (x *Log_ElasticSearch) String() string {
 func (*Log_ElasticSearch) ProtoMessage() {}
 
 func (x *Log_ElasticSearch) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[10]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -662,7 +716,7 @@ type Server_HTTP struct {
 
 func (x *Server_HTTP) Reset() {
 	*x = Server_HTTP{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -674,7 +728,7 @@ func (x *Server_HTTP) String() string {
 func (*Server_HTTP) ProtoMessage() {}
 
 func (x *Server_HTTP) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -720,7 +774,7 @@ type Server_Cors struct {
 
 func (x *Server_Cors) Reset() {
 	*x = Server_Cors{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[12]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -732,7 +786,7 @@ func (x *Server_Cors) String() string {
 func (*Server_Cors) ProtoMessage() {}
 
 func (x *Server_Cors) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[12]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -764,7 +818,7 @@ type Data_Database struct {
 
 func (x *Data_Database) Reset() {
 	*x = Data_Database{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[13]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -776,7 +830,7 @@ func (x *Data_Database) String() string {
 func (*Data_Database) ProtoMessage() {}
 
 func (x *Data_Database) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[13]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -808,7 +862,7 @@ type Data_Cache struct {
 
 func (x *Data_Cache) Reset() {
 	*x = Data_Cache{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[14]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -820,7 +874,7 @@ func (x *Data_Cache) String() string {
 func (*Data_Cache) ProtoMessage() {}
 
 func (x *Data_Cache) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[14]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -859,7 +913,7 @@ type Data_Database_Postgres struct {
 
 func (x *Data_Database_Postgres) Reset() {
 	*x = Data_Database_Postgres{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[15]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -871,7 +925,7 @@ func (x *Data_Database_Postgres) String() string {
 func (*Data_Database_Postgres) ProtoMessage() {}
 
 func (x *Data_Database_Postgres) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[15]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -956,7 +1010,7 @@ type Data_Database_Postgres_DatabasePool struct {
 
 func (x *Data_Database_Postgres_DatabasePool) Reset() {
 	*x = Data_Database_Postgres_DatabasePool{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[16]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -968,7 +1022,7 @@ func (x *Data_Database_Postgres_DatabasePool) String() string {
 func (*Data_Database_Postgres_DatabasePool) ProtoMessage() {}
 
 func (x *Data_Database_Postgres_DatabasePool) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[16]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1030,7 +1084,7 @@ type Data_Database_Postgres_Tls struct {
 
 func (x *Data_Database_Postgres_Tls) Reset() {
 	*x = Data_Database_Postgres_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[17]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1042,7 +1096,7 @@ func (x *Data_Database_Postgres_Tls) String() string {
 func (*Data_Database_Postgres_Tls) ProtoMessage() {}
 
 func (x *Data_Database_Postgres_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[17]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1098,7 +1152,7 @@ type Data_Cache_Redis struct {
 
 func (x *Data_Cache_Redis) Reset() {
 	*x = Data_Cache_Redis{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[18]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1110,7 +1164,7 @@ func (x *Data_Cache_Redis) String() string {
 func (*Data_Cache_Redis) ProtoMessage() {}
 
 func (x *Data_Cache_Redis) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[18]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1214,7 +1268,7 @@ type Data_Cache_Redis_Tls struct {
 
 func (x *Data_Cache_Redis_Tls) Reset() {
 	*x = Data_Cache_Redis_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[19]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1226,7 +1280,7 @@ func (x *Data_Cache_Redis_Tls) String() string {
 func (*Data_Cache_Redis_Tls) ProtoMessage() {}
 
 func (x *Data_Cache_Redis_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[19]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1277,7 +1331,7 @@ type Auth_Casdoor struct {
 
 func (x *Auth_Casdoor) Reset() {
 	*x = Auth_Casdoor{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[20]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1289,7 +1343,7 @@ func (x *Auth_Casdoor) String() string {
 func (*Auth_Casdoor) ProtoMessage() {}
 
 func (x *Auth_Casdoor) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[20]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1357,7 +1411,7 @@ type Observability_Trace struct {
 
 func (x *Observability_Trace) Reset() {
 	*x = Observability_Trace{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[21]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1369,7 +1423,7 @@ func (x *Observability_Trace) String() string {
 func (*Observability_Trace) ProtoMessage() {}
 
 func (x *Observability_Trace) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[21]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1409,7 +1463,7 @@ type Observability_Metric struct {
 
 func (x *Observability_Metric) Reset() {
 	*x = Observability_Metric{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[22]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1421,7 +1475,7 @@ func (x *Observability_Metric) String() string {
 func (*Observability_Metric) ProtoMessage() {}
 
 func (x *Observability_Metric) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[22]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1461,7 +1515,7 @@ type Observability_Logging struct {
 
 func (x *Observability_Logging) Reset() {
 	*x = Observability_Logging{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[23]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1473,7 +1527,7 @@ func (x *Observability_Logging) String() string {
 func (*Observability_Logging) ProtoMessage() {}
 
 func (x *Observability_Logging) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[23]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1514,7 +1568,7 @@ type Observability_Tls struct {
 
 func (x *Observability_Tls) Reset() {
 	*x = Observability_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[24]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1526,7 +1580,7 @@ func (x *Observability_Tls) String() string {
 func (*Observability_Tls) ProtoMessage() {}
 
 func (x *Observability_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[24]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1576,7 +1630,7 @@ type Discovery_Consul struct {
 
 func (x *Discovery_Consul) Reset() {
 	*x = Discovery_Consul{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[25]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1588,7 +1642,7 @@ func (x *Discovery_Consul) String() string {
 func (*Discovery_Consul) ProtoMessage() {}
 
 func (x *Discovery_Consul) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[25]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1650,7 +1704,7 @@ type Discovery_Consul_Tls struct {
 
 func (x *Discovery_Consul_Tls) Reset() {
 	*x = Discovery_Consul_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[26]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1662,7 +1716,7 @@ func (x *Discovery_Consul_Tls) String() string {
 func (*Discovery_Consul_Tls) ProtoMessage() {}
 
 func (x *Discovery_Consul_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[26]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1709,7 +1763,7 @@ type Discovery_Consul_Check struct {
 
 func (x *Discovery_Consul_Check) Reset() {
 	*x = Discovery_Consul_Check{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[27]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1721,7 +1775,7 @@ func (x *Discovery_Consul_Check) String() string {
 func (*Discovery_Consul_Check) ProtoMessage() {}
 
 func (x *Discovery_Consul_Check) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[27]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1761,7 +1815,7 @@ type Discovery_Consul_Check_TTL struct {
 
 func (x *Discovery_Consul_Check_TTL) Reset() {
 	*x = Discovery_Consul_Check_TTL{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[28]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1773,7 +1827,7 @@ func (x *Discovery_Consul_Check_TTL) String() string {
 func (*Discovery_Consul_Check_TTL) ProtoMessage() {}
 
 func (x *Discovery_Consul_Check_TTL) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[28]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1815,7 +1869,7 @@ type Search_ElasticSearch struct {
 
 func (x *Search_ElasticSearch) Reset() {
 	*x = Search_ElasticSearch{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[29]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1827,7 +1881,7 @@ func (x *Search_ElasticSearch) String() string {
 func (*Search_ElasticSearch) ProtoMessage() {}
 
 func (x *Search_ElasticSearch) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[29]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1882,7 +1936,7 @@ type Search_ElasticSearch_Tls struct {
 
 func (x *Search_ElasticSearch_Tls) Reset() {
 	*x = Search_ElasticSearch_Tls{}
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[30]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1894,7 +1948,7 @@ func (x *Search_ElasticSearch_Tls) String() string {
 func (*Search_ElasticSearch_Tls) ProtoMessage() {}
 
 func (x *Search_ElasticSearch_Tls) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_conf_v1_conf_proto_msgTypes[30]
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1931,11 +1985,64 @@ func (x *Search_ElasticSearch_Tls) GetCaPem() string {
 	return ""
 }
 
+type Store_Minio struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DefaultDomain string                 `protobuf:"bytes,1,opt,name=default_domain,json=defaultDomain,proto3" json:"default_domain,omitempty"`
+	// buckets 按 bucket 名覆盖 default_domain,用于某些 bucket 挂在独立 CDN 域名上的情况
+	Buckets       map[string]string `protobuf:"bytes,2,rep,name=buckets,proto3" json:"buckets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Store_Minio) Reset() {
+	*x = Store_Minio{}
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Store_Minio) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Store_Minio) ProtoMessage() {}
+
+func (x *Store_Minio) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_conf_v1_conf_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Store_Minio.ProtoReflect.Descriptor instead.
+func (*Store_Minio) Descriptor() ([]byte, []int) {
+	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{8, 0}
+}
+
+func (x *Store_Minio) GetDefaultDomain() string {
+	if x != nil {
+		return x.DefaultDomain
+	}
+	return ""
+}
+
+func (x *Store_Minio) GetBuckets() map[string]string {
+	if x != nil {
+		return x.Buckets
+	}
+	return nil
+}
+
 var File_internal_conf_v1_conf_proto protoreflect.FileDescriptor
 
 const file_internal_conf_v1_conf_proto_rawDesc = "" +
 	"\n" +
-	"\x1binternal/conf/v1/conf.proto\x12\aconf.v1\x1a#third_party/validate/validate.proto\x1a\x1egoogle/protobuf/duration.proto\"\xeb\x02\n" +
+	"\x1binternal/conf/v1/conf.proto\x12\aconf.v1\x1a#third_party/validate/validate.proto\x1a\x1egoogle/protobuf/duration.proto\"\x99\x03\n" +
 	"\tBootstrap\x12/\n" +
 	"\x06server\x18\x01 \x01(\v2\x0f.conf.v1.ServerB\x06\xbaH\x03\xc8\x01\x01R\x06server\x12)\n" +
 	"\x04data\x18\x02 \x01(\v2\r.conf.v1.DataB\x06\xbaH\x03\xc8\x01\x01R\x04data\x12)\n" +
@@ -1943,7 +2050,8 @@ const file_internal_conf_v1_conf_proto_rawDesc = "" +
 	"\robservability\x18\x04 \x01(\v2\x16.conf.v1.ObservabilityB\x06\xbaH\x03\xc8\x01\x00R\robservability\x128\n" +
 	"\tdiscovery\x18\x05 \x01(\v2\x12.conf.v1.DiscoveryB\x06\xbaH\x03\xc8\x01\x00R\tdiscovery\x12/\n" +
 	"\x06search\x18\x06 \x01(\v2\x0f.conf.v1.SearchB\x06\xbaH\x03\xc8\x01\x00R\x06search\x12&\n" +
-	"\x03log\x18\a \x01(\v2\f.conf.v1.LogB\x06\xbaH\x03\xc8\x01\x01R\x03log\"\x8d\x05\n" +
+	"\x03log\x18\a \x01(\v2\f.conf.v1.LogB\x06\xbaH\x03\xc8\x01\x01R\x03log\x12,\n" +
+	"\x05store\x18\b \x01(\v2\x0e.conf.v1.StoreB\x06\xbaH\x03\xc8\x01\x00R\x05store\"\x8d\x05\n" +
 	"\x03Log\x124\n" +
 	"\tframework\x18\x01 \x01(\v2\x16.conf.v1.Log.FrameworkR\tframework\x12:\n" +
 	"\vapplication\x18\x02 \x01(\v2\x18.conf.v1.Log.ApplicationR\vapplication\x12@\n" +
@@ -2076,7 +2184,15 @@ const file_internal_conf_v1_conf_proto_rawDesc = "" +
 	"\x03Tls\x12\x16\n" +
 	"\x06enable\x18\x01 \x01(\bR\x06enable\x120\n" +
 	"\x14insecure_skip_verify\x18\x02 \x01(\bR\x12insecureSkipVerify\x12\x15\n" +
-	"\x06ca_pem\x18\x03 \x01(\tR\x05caPemB\x95\x01\n" +
+	"\x06ca_pem\x18\x03 \x01(\tR\x05caPem\"\x80\x02\n" +
+	"\x05Store\x12*\n" +
+	"\x05minio\x18\x01 \x01(\v2\x14.conf.v1.Store.MinioR\x05minio\x1a\xca\x01\n" +
+	"\x05Minio\x12H\n" +
+	"\x0edefault_domain\x18\x01 \x01(\tB!\xbaH\x1er\x1c\x92\x02\x19https://minio.example.comR\rdefaultDomain\x12;\n" +
+	"\abuckets\x18\x02 \x03(\v2!.conf.v1.Store.Minio.BucketsEntryR\abuckets\x1a:\n" +
+	"\fBucketsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x95\x01\n" +
 	"\vcom.conf.v1B\tConfProtoP\x01Z>github.com/lens077/go-connect-template/internal/conf/v1;confv1\xa2\x02\x03CXX\xaa\x02\aConf.V1\xca\x02\aConf\\V1\xe2\x02\x13Conf\\V1\\GPBMetadata\xea\x02\bConf::V1b\x06proto3"
 
 var (
@@ -2091,7 +2207,7 @@ func file_internal_conf_v1_conf_proto_rawDescGZIP() []byte {
 	return file_internal_conf_v1_conf_proto_rawDescData
 }
 
-var file_internal_conf_v1_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_internal_conf_v1_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_internal_conf_v1_conf_proto_goTypes = []any{
 	(*Bootstrap)(nil),                           // 0: conf.v1.Bootstrap
 	(*Log)(nil),                                 // 1: conf.v1.Log
@@ -2101,30 +2217,33 @@ var file_internal_conf_v1_conf_proto_goTypes = []any{
 	(*Observability)(nil),                       // 5: conf.v1.Observability
 	(*Discovery)(nil),                           // 6: conf.v1.Discovery
 	(*Search)(nil),                              // 7: conf.v1.Search
-	(*Log_Framework)(nil),                       // 8: conf.v1.Log.Framework
-	(*Log_Application)(nil),                     // 9: conf.v1.Log.Application
-	(*Log_ElasticSearch)(nil),                   // 10: conf.v1.Log.ElasticSearch
-	(*Server_HTTP)(nil),                         // 11: conf.v1.Server.HTTP
-	(*Server_Cors)(nil),                         // 12: conf.v1.Server.Cors
-	(*Data_Database)(nil),                       // 13: conf.v1.Data.Database
-	(*Data_Cache)(nil),                          // 14: conf.v1.Data.Cache
-	(*Data_Database_Postgres)(nil),              // 15: conf.v1.Data.Database.Postgres
-	(*Data_Database_Postgres_DatabasePool)(nil), // 16: conf.v1.Data.Database.Postgres.DatabasePool
-	(*Data_Database_Postgres_Tls)(nil),          // 17: conf.v1.Data.Database.Postgres.Tls
-	(*Data_Cache_Redis)(nil),                    // 18: conf.v1.Data.Cache.Redis
-	(*Data_Cache_Redis_Tls)(nil),                // 19: conf.v1.Data.Cache.Redis.Tls
-	(*Auth_Casdoor)(nil),                        // 20: conf.v1.Auth.Casdoor
-	(*Observability_Trace)(nil),                 // 21: conf.v1.Observability.Trace
-	(*Observability_Metric)(nil),                // 22: conf.v1.Observability.Metric
-	(*Observability_Logging)(nil),               // 23: conf.v1.Observability.Logging
-	(*Observability_Tls)(nil),                   // 24: conf.v1.Observability.Tls
-	(*Discovery_Consul)(nil),                    // 25: conf.v1.Discovery.Consul
-	(*Discovery_Consul_Tls)(nil),                // 26: conf.v1.Discovery.Consul.Tls
-	(*Discovery_Consul_Check)(nil),              // 27: conf.v1.Discovery.Consul.Check
-	(*Discovery_Consul_Check_TTL)(nil),          // 28: conf.v1.Discovery.Consul.Check.TTL
-	(*Search_ElasticSearch)(nil),                // 29: conf.v1.Search.ElasticSearch
-	(*Search_ElasticSearch_Tls)(nil),            // 30: conf.v1.Search.ElasticSearch.Tls
-	(*durationpb.Duration)(nil),                 // 31: google.protobuf.Duration
+	(*Store)(nil),                               // 8: conf.v1.Store
+	(*Log_Framework)(nil),                       // 9: conf.v1.Log.Framework
+	(*Log_Application)(nil),                     // 10: conf.v1.Log.Application
+	(*Log_ElasticSearch)(nil),                   // 11: conf.v1.Log.ElasticSearch
+	(*Server_HTTP)(nil),                         // 12: conf.v1.Server.HTTP
+	(*Server_Cors)(nil),                         // 13: conf.v1.Server.Cors
+	(*Data_Database)(nil),                       // 14: conf.v1.Data.Database
+	(*Data_Cache)(nil),                          // 15: conf.v1.Data.Cache
+	(*Data_Database_Postgres)(nil),              // 16: conf.v1.Data.Database.Postgres
+	(*Data_Database_Postgres_DatabasePool)(nil), // 17: conf.v1.Data.Database.Postgres.DatabasePool
+	(*Data_Database_Postgres_Tls)(nil),          // 18: conf.v1.Data.Database.Postgres.Tls
+	(*Data_Cache_Redis)(nil),                    // 19: conf.v1.Data.Cache.Redis
+	(*Data_Cache_Redis_Tls)(nil),                // 20: conf.v1.Data.Cache.Redis.Tls
+	(*Auth_Casdoor)(nil),                        // 21: conf.v1.Auth.Casdoor
+	(*Observability_Trace)(nil),                 // 22: conf.v1.Observability.Trace
+	(*Observability_Metric)(nil),                // 23: conf.v1.Observability.Metric
+	(*Observability_Logging)(nil),               // 24: conf.v1.Observability.Logging
+	(*Observability_Tls)(nil),                   // 25: conf.v1.Observability.Tls
+	(*Discovery_Consul)(nil),                    // 26: conf.v1.Discovery.Consul
+	(*Discovery_Consul_Tls)(nil),                // 27: conf.v1.Discovery.Consul.Tls
+	(*Discovery_Consul_Check)(nil),              // 28: conf.v1.Discovery.Consul.Check
+	(*Discovery_Consul_Check_TTL)(nil),          // 29: conf.v1.Discovery.Consul.Check.TTL
+	(*Search_ElasticSearch)(nil),                // 30: conf.v1.Search.ElasticSearch
+	(*Search_ElasticSearch_Tls)(nil),            // 31: conf.v1.Search.ElasticSearch.Tls
+	(*Store_Minio)(nil),                         // 32: conf.v1.Store.Minio
+	nil,                                         // 33: conf.v1.Store.Minio.BucketsEntry
+	(*durationpb.Duration)(nil),                 // 34: google.protobuf.Duration
 }
 var file_internal_conf_v1_conf_proto_depIdxs = []int32{
 	2,  // 0: conf.v1.Bootstrap.server:type_name -> conf.v1.Server
@@ -2134,46 +2253,49 @@ var file_internal_conf_v1_conf_proto_depIdxs = []int32{
 	6,  // 4: conf.v1.Bootstrap.discovery:type_name -> conf.v1.Discovery
 	7,  // 5: conf.v1.Bootstrap.search:type_name -> conf.v1.Search
 	1,  // 6: conf.v1.Bootstrap.log:type_name -> conf.v1.Log
-	8,  // 7: conf.v1.Log.framework:type_name -> conf.v1.Log.Framework
-	9,  // 8: conf.v1.Log.application:type_name -> conf.v1.Log.Application
-	10, // 9: conf.v1.Log.elasticsearch:type_name -> conf.v1.Log.ElasticSearch
-	11, // 10: conf.v1.Server.http:type_name -> conf.v1.Server.HTTP
-	12, // 11: conf.v1.Server.cors:type_name -> conf.v1.Server.Cors
-	13, // 12: conf.v1.Data.database:type_name -> conf.v1.Data.Database
-	14, // 13: conf.v1.Data.cache:type_name -> conf.v1.Data.Cache
-	20, // 14: conf.v1.Auth.casdoor:type_name -> conf.v1.Auth.Casdoor
-	21, // 15: conf.v1.Observability.trace:type_name -> conf.v1.Observability.Trace
-	22, // 16: conf.v1.Observability.metric:type_name -> conf.v1.Observability.Metric
-	23, // 17: conf.v1.Observability.log:type_name -> conf.v1.Observability.Logging
-	25, // 18: conf.v1.Discovery.consul:type_name -> conf.v1.Discovery.Consul
-	29, // 19: conf.v1.Search.elastic_search:type_name -> conf.v1.Search.ElasticSearch
-	31, // 20: conf.v1.Server.HTTP.read_timeout:type_name -> google.protobuf.Duration
-	31, // 21: conf.v1.Server.HTTP.write_timeout:type_name -> google.protobuf.Duration
-	31, // 22: conf.v1.Server.HTTP.idle_timeout:type_name -> google.protobuf.Duration
-	15, // 23: conf.v1.Data.Database.postgres:type_name -> conf.v1.Data.Database.Postgres
-	18, // 24: conf.v1.Data.Cache.redis:type_name -> conf.v1.Data.Cache.Redis
-	16, // 25: conf.v1.Data.Database.Postgres.pool:type_name -> conf.v1.Data.Database.Postgres.DatabasePool
-	17, // 26: conf.v1.Data.Database.Postgres.tls:type_name -> conf.v1.Data.Database.Postgres.Tls
-	31, // 27: conf.v1.Data.Database.Postgres.DatabasePool.max_conn_lifetime:type_name -> google.protobuf.Duration
-	31, // 28: conf.v1.Data.Database.Postgres.DatabasePool.max_conn_idle_time:type_name -> google.protobuf.Duration
-	31, // 29: conf.v1.Data.Database.Postgres.DatabasePool.ping_timeout:type_name -> google.protobuf.Duration
-	31, // 30: conf.v1.Data.Cache.Redis.dial_timeout:type_name -> google.protobuf.Duration
-	31, // 31: conf.v1.Data.Cache.Redis.read_timeout:type_name -> google.protobuf.Duration
-	31, // 32: conf.v1.Data.Cache.Redis.write_timeout:type_name -> google.protobuf.Duration
-	19, // 33: conf.v1.Data.Cache.Redis.tls:type_name -> conf.v1.Data.Cache.Redis.Tls
-	24, // 34: conf.v1.Observability.Trace.tls:type_name -> conf.v1.Observability.Tls
-	24, // 35: conf.v1.Observability.Metric.tls:type_name -> conf.v1.Observability.Tls
-	24, // 36: conf.v1.Observability.Logging.tls:type_name -> conf.v1.Observability.Tls
-	26, // 37: conf.v1.Discovery.Consul.tls:type_name -> conf.v1.Discovery.Consul.Tls
-	27, // 38: conf.v1.Discovery.Consul.check:type_name -> conf.v1.Discovery.Consul.Check
-	28, // 39: conf.v1.Discovery.Consul.Check.ttl:type_name -> conf.v1.Discovery.Consul.Check.TTL
-	31, // 40: conf.v1.Discovery.Consul.Check.TTL.ping_interval:type_name -> google.protobuf.Duration
-	30, // 41: conf.v1.Search.ElasticSearch.tls:type_name -> conf.v1.Search.ElasticSearch.Tls
-	42, // [42:42] is the sub-list for method output_type
-	42, // [42:42] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	8,  // 7: conf.v1.Bootstrap.store:type_name -> conf.v1.Store
+	9,  // 8: conf.v1.Log.framework:type_name -> conf.v1.Log.Framework
+	10, // 9: conf.v1.Log.application:type_name -> conf.v1.Log.Application
+	11, // 10: conf.v1.Log.elasticsearch:type_name -> conf.v1.Log.ElasticSearch
+	12, // 11: conf.v1.Server.http:type_name -> conf.v1.Server.HTTP
+	13, // 12: conf.v1.Server.cors:type_name -> conf.v1.Server.Cors
+	14, // 13: conf.v1.Data.database:type_name -> conf.v1.Data.Database
+	15, // 14: conf.v1.Data.cache:type_name -> conf.v1.Data.Cache
+	21, // 15: conf.v1.Auth.casdoor:type_name -> conf.v1.Auth.Casdoor
+	22, // 16: conf.v1.Observability.trace:type_name -> conf.v1.Observability.Trace
+	23, // 17: conf.v1.Observability.metric:type_name -> conf.v1.Observability.Metric
+	24, // 18: conf.v1.Observability.log:type_name -> conf.v1.Observability.Logging
+	26, // 19: conf.v1.Discovery.consul:type_name -> conf.v1.Discovery.Consul
+	30, // 20: conf.v1.Search.elastic_search:type_name -> conf.v1.Search.ElasticSearch
+	32, // 21: conf.v1.Store.minio:type_name -> conf.v1.Store.Minio
+	34, // 22: conf.v1.Server.HTTP.read_timeout:type_name -> google.protobuf.Duration
+	34, // 23: conf.v1.Server.HTTP.write_timeout:type_name -> google.protobuf.Duration
+	34, // 24: conf.v1.Server.HTTP.idle_timeout:type_name -> google.protobuf.Duration
+	16, // 25: conf.v1.Data.Database.postgres:type_name -> conf.v1.Data.Database.Postgres
+	19, // 26: conf.v1.Data.Cache.redis:type_name -> conf.v1.Data.Cache.Redis
+	17, // 27: conf.v1.Data.Database.Postgres.pool:type_name -> conf.v1.Data.Database.Postgres.DatabasePool
+	18, // 28: conf.v1.Data.Database.Postgres.tls:type_name -> conf.v1.Data.Database.Postgres.Tls
+	34, // 29: conf.v1.Data.Database.Postgres.DatabasePool.max_conn_lifetime:type_name -> google.protobuf.Duration
+	34, // 30: conf.v1.Data.Database.Postgres.DatabasePool.max_conn_idle_time:type_name -> google.protobuf.Duration
+	34, // 31: conf.v1.Data.Database.Postgres.DatabasePool.ping_timeout:type_name -> google.protobuf.Duration
+	34, // 32: conf.v1.Data.Cache.Redis.dial_timeout:type_name -> google.protobuf.Duration
+	34, // 33: conf.v1.Data.Cache.Redis.read_timeout:type_name -> google.protobuf.Duration
+	34, // 34: conf.v1.Data.Cache.Redis.write_timeout:type_name -> google.protobuf.Duration
+	20, // 35: conf.v1.Data.Cache.Redis.tls:type_name -> conf.v1.Data.Cache.Redis.Tls
+	25, // 36: conf.v1.Observability.Trace.tls:type_name -> conf.v1.Observability.Tls
+	25, // 37: conf.v1.Observability.Metric.tls:type_name -> conf.v1.Observability.Tls
+	25, // 38: conf.v1.Observability.Logging.tls:type_name -> conf.v1.Observability.Tls
+	27, // 39: conf.v1.Discovery.Consul.tls:type_name -> conf.v1.Discovery.Consul.Tls
+	28, // 40: conf.v1.Discovery.Consul.check:type_name -> conf.v1.Discovery.Consul.Check
+	29, // 41: conf.v1.Discovery.Consul.Check.ttl:type_name -> conf.v1.Discovery.Consul.Check.TTL
+	34, // 42: conf.v1.Discovery.Consul.Check.TTL.ping_interval:type_name -> google.protobuf.Duration
+	31, // 43: conf.v1.Search.ElasticSearch.tls:type_name -> conf.v1.Search.ElasticSearch.Tls
+	33, // 44: conf.v1.Store.Minio.buckets:type_name -> conf.v1.Store.Minio.BucketsEntry
+	45, // [45:45] is the sub-list for method output_type
+	45, // [45:45] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_internal_conf_v1_conf_proto_init() }
@@ -2187,7 +2309,7 @@ func file_internal_conf_v1_conf_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_conf_v1_conf_proto_rawDesc), len(file_internal_conf_v1_conf_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

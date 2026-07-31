@@ -29,6 +29,9 @@ message Bootstrap {
   Log log = 7[
     (buf.validate.field).required = true
   ];
+  Store store = 8[
+    (buf.validate.field).required = false
+  ];
 }
 
 message Log {
@@ -96,6 +99,7 @@ message Server {
 message Data {
   message Database {
     Postgres postgres = 1;
+
     message Postgres {
       string host = 1 [
         (buf.validate.field).string.address = true,
@@ -273,4 +277,16 @@ message Search {
     }
   }
   ElasticSearch elastic_search = 1;
+}
+// Store 对象存储。只配「对外访问域名」,不配 AK/SK ——
+// 上传走各服务自己的 SDK 凭据,这里只负责把存储 key 拼成可访问的 URL。
+message Store {
+  message Minio {
+    string default_domain = 1 [
+      (buf.validate.field).string.example = "https://minio.example.com"
+    ];
+    // buckets 按 bucket 名覆盖 default_domain,用于某些 bucket 挂在独立 CDN 域名上的情况
+    map<string, string> buckets = 2;
+  }
+  Minio minio = 1;
 }
