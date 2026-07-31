@@ -8,7 +8,8 @@ import (
 	"connectrpc.com/connect"
 	connectcors "connectrpc.com/cors"
 	"connectrpc.com/validate"
-	"github.com/lens077/go-connect-template/api/search/v1/searchv1connect"
+	"github.com/lens077/go-connect-template/api/search/v1/searchv1connect" // +co:example
+	// +co:anchor server-imports
 	conf "github.com/lens077/go-connect-template/internal/conf/v1"
 	"github.com/lens077/go-connect-template/internal/data"
 	"github.com/rs/cors"
@@ -28,7 +29,8 @@ var Module = fx.Module("server",
 func NewHTTPServer(
 	lc fx.Lifecycle,
 	cfg *conf.Bootstrap,
-	searchv1Service searchv1connect.SearchServiceHandler,
+	searchv1Service searchv1connect.SearchServiceHandler, // +co:example
+	// +co:anchor server-handler-params
 	logger *zap.Logger,
 	connectOptions []connect.HandlerOption,
 	deps *data.Data, // 基础设施依赖
@@ -36,15 +38,15 @@ func NewHTTPServer(
 
 	mux := http.NewServeMux()
 
-	// 将 validate 拦截器添加到选项中
-	combinedOptions := append(connectOptions, connect.WithInterceptors(validate.NewInterceptor()))
-
 	// 注册 Connect 业务处理器
+	// +co:begin example
 	searchv1connectPath, searchv1connectHandler := searchv1connect.NewSearchServiceHandler(
 		searchv1Service,
-		combinedOptions...,
+		handlerOptions(connectOptions)...,
 	)
 	mux.Handle(searchv1connectPath, searchv1connectHandler)
+	// +co:end
+	// +co:anchor server-handler-register
 
 	// 应用本身的健康检查
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +89,21 @@ func NewHTTPServer(
 	})
 
 	return server
+}
+
+// handlerOptions 返回注册 Connect handler 用的选项:全局选项 + validate 拦截器。
+//
+// 写成函数而不是 NewHTTPServer 里的一个局部变量,是为了让「一个 handler 都不注册」
+// 的骨架也编译得过 —— 未使用的局部变量是编译错误,未使用的函数不是。
+// co new --no-resource 生成的正是这种骨架。
+//
+// 每次调用复制一份,不直接 append 调用方那个切片:多个 handler 各 append 一次
+// 同一个底层数组时会互相覆盖最后一格,表现为「只有最后注册的那个服务带上了
+// validate 拦截器」,而且不报错。
+func handlerOptions(base []connect.HandlerOption) []connect.HandlerOption {
+	out := make([]connect.HandlerOption, 0, len(base)+1)
+	out = append(out, base...)
+	return append(out, connect.WithInterceptors(validate.NewInterceptor()))
 }
 
 // withCORS 为处理器添加跨域支持

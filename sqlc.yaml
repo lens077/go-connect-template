@@ -4,7 +4,20 @@ sql:
     queries: "internal/data/queries"
     engine: "postgresql"
     database:
-      uri: ${DB_URI}
+      # 示例值,按需改成自己的库。真实凭据别提交:sqlc 支持 ${VAR} 展开,
+      # 用 uri: "${DATABASE_URL}" 把它挪到环境变量里更稳妥。
+      #
+      # sslrootcert 是相对本文件所在目录的路径;sslmode=verify-ca / verify-full
+      # 时必须存在,disable 时这两个参数会被忽略。
+      uri: "postgresql://postgres:REPLACE_ME@127.0.0.1:5432/postgres?sslmode=require&sslrootcert=./pg_ca_pem.crt&timezone=Asia/Shanghai"
+    analyzer:
+      # 关掉数据库分析器:开着的话每次 sqlc generate 都要连上面那个库,
+      # 没起数据库时 make sqlc 会直接失败。内置的 postgres 解析器靠 schema/
+      # 目录就能推断类型,离线够用。
+      #
+      # 想让 sqlc 用真实库校验查询(能查出内置解析器漏掉的类型错误)时,
+      # 把 uri 改成可用的连接串再置 true。
+      database: false
     gen:
       go:
         package: "models"

@@ -5,5 +5,8 @@ import (
 )
 
 var Module = fx.Module("service",
-	fx.Provide(NewSearchService),
+	fx.Provide(
+		NewSearchService, // +co:example
+		// +co:anchor service-providers
+	),
 )
