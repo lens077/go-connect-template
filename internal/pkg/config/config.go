@@ -7,10 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/consul/api"
 	"github.com/lens077/go-connect-template/constants"
 	confv1 "github.com/lens077/go-connect-template/internal/conf/v1"
-	"github.com/lens077/go-connect-template/internal/pkg/env"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
@@ -20,6 +18,8 @@ import (
 var (
 	confMu sync.RWMutex
 	conf   = &confv1.Bootstrap{}
+	// srcName 本次启动实际生效的数据源名,供启动日志打印(排查「读的到底是哪份配置」)
+	srcName string
 
 	Module = fx.Module("config",
 		fx.Provide(
@@ -46,7 +46,7 @@ var (
 
 func decodeConfig(data map[string]any, target any) error {
 	v := viper.New()
-	v.SetConfigType(constants.ConsulFileFormat)
+	v.SetConfigType(constants.ConfigFileFormat)
 	for k, val := range data {
 		v.Set(k, val)
 	}
@@ -79,46 +79,32 @@ func decodeConfig(data map[string]any, target any) error {
 	return decoder.Decode(v.AllSettings())
 }
 
+// Init 拉取并解析整份 Bootstrap 配置。
+//
+// 「从哪儿拉」由 CONFIG_SOURCE 决定(见 source.go),本函数只负责选源、解码、落盘,
+// 不感知任何数据源细节 —— 引导参数各自由对应 source 从环境变量读取,其余全部配置
+// (含 Consul 服务发现地址、DB、Redis 等)一律由选中的数据源下发。
 func Init(ctx context.Context) (*confv1.Bootstrap, error) {
-	addr := env.GetEnvString(constants.EnvConsulAddr, constants.ConsulAddr)
-	path := env.GetEnvString(constants.EnvConsulPath, constants.ConsulPath)
-	if path == "" {
-		return nil, fmt.Errorf("required env %s is missing", constants.EnvConsulPath)
-	}
-
-	consulCfg := api.DefaultConfig()
-	consulCfg.Address = addr
-	consulCfg.Token = env.GetEnvString(constants.EnvConsulToken, constants.ConsulToken)
-	consulCfg.Scheme = env.GetEnvString(constants.EnvConsulScheme, constants.ConsulScheme)
-
-	if consulCfg.Scheme == "https" {
-		if env.GetEnvBool(constants.EnvConsulInsecureSkipVerify, constants.ConsulInsecureSkipVerify) {
-			consulCfg.TLSConfig.InsecureSkipVerify = true
-		} else {
-			consulCfg.TLSConfig = api.TLSConfig{
-				CAFile:   env.GetEnvString(constants.EnvConsulCaFile, ""),
-				CertFile: env.GetEnvString(constants.EnvConsulCertFile, ""),
-				KeyFile:  env.GetEnvString(constants.EnvConsulKeyFile, ""),
-			}
-		}
-	}
-
-	consulClient, err := api.NewClient(consulCfg)
+	src, err := NewSource()
 	if err != nil {
-		return nil, fmt.Errorf("initialize consul client failed: %v", err)
+		return nil, err
 	}
 
-	rawConfig, err := GetConfigFromConsul(consulClient, path)
+	rawConfig, err := src.Load(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	localConf := &confv1.Bootstrap{}
 	if err := decodeConfig(rawConfig, localConf); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode bootstrap from %s: %w", src.Name(), err)
 	}
 
+	confMu.Lock()
 	conf = localConf
+	srcName = src.Name()
+	confMu.Unlock()
+
 	return localConf, nil
 }
 
@@ -126,4 +112,11 @@ func GetConfig() *confv1.Bootstrap {
 	confMu.RLock()
 	defer confMu.RUnlock()
 	return conf
+}
+
+// SourceName 返回本次启动实际生效的配置数据源名;Init 之前为空。
+func SourceName() string {
+	confMu.RLock()
+	defer confMu.RUnlock()
+	return srcName
 }

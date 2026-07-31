@@ -12,6 +12,23 @@ const (
 	EnvDeploymentMode = "DEPLOYMENT_MODE"
 )
 
+// EnvConfigSource 选择整份 Bootstrap 配置的数据源。
+// 取值见 constants.ConfigSourceFile / ConfigSourceConsul / ConfigSourceConfigCenter,
+// 不设置时用 DefaultConfigSource。
+const (
+	EnvConfigSource = "CONFIG_SOURCE"
+	EnvConfigFile   = "CONFIG_FILE"
+)
+
+// 配置中心(config-service)数据源。namespace 与 environment 没有默认值:
+// 猜错了不会报错,只会静默读到另一个环境的配置,比启动失败难查得多。
+const (
+	EnvConfigCenterAddr      = "CONFIG_CENTER_ADDR"      // config-service 地址,如 http://127.0.0.1:30010
+	EnvConfigCenterNamespace = "CONFIG_CENTER_NAMESPACE" // 命名空间,一般就是服务名
+	EnvConfigCenterEnv       = "CONFIG_CENTER_ENV"       // 环境,如 dev/pre/prod
+	EnvConfigCenterKey       = "CONFIG_CENTER_KEY"       // 配置键,如 bootstrap.yaml
+)
+
 // Consul
 const (
 	EnvConsulEnabled            = "CONSUL_ENABLED"
