@@ -1,26 +1,28 @@
+# 本地开发用的 Redis。密码在 redis.conf 的 requirepass 里,与 configs/dev.yml
+# 的 data.cache.redis.password 一致,起来就能直接 make dev。
+name: dev-redis
+
 services:
+
+  # 同 postgres:不写 container_name,固定名字会跟机器上已有的容器撞车
   redis:
-    image: redis
-    container_name: redis
+    # 不用裸 redis(等于 latest):大版本什么时候跳过去不由你决定
+    image: redis:8-alpine
     restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
+      # 配置只读挂进去 —— requirepass 就在里面,容器不该改它
       - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
-      - ./data:/data
-      - redis-logs:/logs
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
-    environment:
-      # 可用于某些镜像的日志配置（非必须）
-      REDIS_LOG_LEVEL: notice
-    networks:
-      - app-network
+      # 用具名卷而不是 ./data:后者会在仓库里凭空长出一个 root 属主的目录,
+      # 还会被 git status 看见
+      - data:/data
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a devpassword ping | grep -q PONG" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-# 卷声明
 volumes:
-  redis-logs:
-
-# 网络声明
-networks:
-  app-network:
-    driver: bridge
+  data:

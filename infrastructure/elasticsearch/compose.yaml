@@ -1,0 +1,37 @@
+# 本地开发用的单节点 Elasticsearch。凭据与 configs/dev.yml 里的
+# search.elastic_search 一致,起来就能直接 make dev。
+#
+# 镜像大版本必须跟 go.mod 里的客户端对齐(现在是 go-elasticsearch/v9 → 9.x):
+# v9 客户端会发 `Accept: application/vnd.elasticsearch+json; compatible-with=9`,
+# 8.x 的服务端不认这个头,任何请求(包括 Ping)都返回 400,而报错里只有
+# "status code: 400",看不出是版本不匹配。
+name: dev-elasticsearch
+
+services:
+
+  # 同 postgres:不写 container_name,固定名字会跟机器上已有的容器撞车
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.0.0
+    restart: on-failure:5
+    ports:
+      - "9200:9200"
+    environment:
+      # 单节点模式:不做集群发现,省掉一堆本地跑不通的选主逻辑
+      discovery.type: single-node
+      # 开 basic auth 但关 TLS:配置里的 username/password 走的就是这条路径,
+      # 关掉 security 反而会让带 Authorization 头的请求被判成 400
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      ELASTIC_PASSWORD: devpassword
+      # 本地限制堆大小,默认会按物理内存的一半来要,笔记本上很容易把内存吃光
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf -u elastic:devpassword http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - data:/usr/share/elasticsearch/data
+
+volumes:
+  data:

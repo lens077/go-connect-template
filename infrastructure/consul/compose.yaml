@@ -1,24 +1,36 @@
+# 本地开发用的单节点 Consul,UI 在 http://127.0.0.1:8500。
+#
+# make dev 用不到它(CONSUL_ENABLED=false,配置也从本地文件读)。
+# 要验服务注册(CONSUL_ENABLED=true)或 make dev-consul(从 KV 读配置)才需要起。
+name: dev-consul
+
 services:
 
+  # 同 postgres:不写 container_name,固定名字会跟机器上已有的容器撞车
   consul:
-    image: hashicorp/consul:latest
+    # 不用 latest:2.0 已经在 registry 上了,某天 pull 下来的就不是 1.x 了
+    image: hashicorp/consul:1.22
+    restart: on-failure:5
     ports:
-      - "8300:8300"
-      - "8302:8302"
-      - "8302:8302"
+      # HTTP API 与 UI。8300/8302 是 server RPC 与 serf,单节点用不上,不占宿主机端口
       - "8500:8500"
-      - "8600:8600"
-    container_name: consul
+      # DNS 接口,走 UDP
+      - "8600:8600/udp"
     volumes:
       - data:/consul/data
-      - ./config:/consul/config
     command:
       - agent
       - -server
       - -ui
       - -node=n1
       - -bootstrap-expect=1
+      # 不加这个,HTTP API 只监听容器内的 127.0.0.1,宿主机映射了端口也连不上
       - -client=0.0.0.0
+    healthcheck:
+      test: [ "CMD", "consul", "info" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   data:
