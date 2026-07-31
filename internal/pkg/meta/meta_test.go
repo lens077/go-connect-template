@@ -67,9 +67,9 @@ func TestAppInfoZeroValue(t *testing.T) {
 func TestAppInfoInitialization(t *testing.T) {
 	// 测试结构体初始化
 	testCases := []struct {
-		name        string
-		input       AppInfo
-		expectedID  string
+		name         string
+		input        AppInfo
+		expectedID   string
 		expectedName string
 	}{
 		{
@@ -93,9 +93,9 @@ func TestAppInfoInitialization(t *testing.T) {
 			expectedName: "payment-service",
 		},
 		{
-			name:        "Empty info",
-			input:       AppInfo{},
-			expectedID:  "",
+			name:         "Empty info",
+			input:        AppInfo{},
+			expectedID:   "",
 			expectedName: "",
 		},
 	}
