@@ -17,7 +17,7 @@ import (
 	logger "github.com/lens077/go-connect-template/internal/pkg/log"
 	"github.com/lens077/go-connect-template/internal/pkg/meta"
 	"github.com/lens077/go-connect-template/internal/pkg/otel"
-	"github.com/lens077/go-connect-template/internal/pkg/registry"
+	"github.com/lens077/go-connect-template/internal/pkg/registry" // +co:consul
 	"github.com/lens077/go-connect-template/internal/server"
 	"github.com/lens077/go-connect-template/internal/service"
 
@@ -81,7 +81,7 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 		config.Module,     // 配置
 		logger.FxLogger(), // Fx框架本身的日志控制器
 
-		registry.Module, // 服务注册/发现
+		registry.Module, // 服务注册/发现 +co:consul
 
 		// 可观测性 - 根据配置决定是否启用
 		fx.Provide(func(conf *confv1.Bootstrap) *confv1.Observability {
@@ -105,31 +105,46 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 		// 配置验证和初始化
 		fx.Invoke(
 			// 启动之前初始化 Consul 注册中心
+			// +co:begin consul
 			func(reg *registry.ConsulRegistry, logger *zap.Logger) {
 				if reg != nil {
 					logger.Info("consul service discovery component lifecycle successfully initialized")
 				}
 			},
+			// +co:end
 
 			// 初始化并启动核心应用逻辑
 			func(lc fx.Lifecycle, conf *confv1.Bootstrap, d *data.Data, logger *zap.Logger, srv *http.Server, otelShutdown func(context.Context) error) {
 				lc.Append(fx.Hook{
 					// 启动服务时的操作
 					OnStart: func(ctx context.Context) error {
-						logger.Info("performing startup health checks...")
+						// 打出配置源:线上排查「为什么读到的是旧配置」时,
+						// 第一件事就是确认这份配置到底来自文件还是 Consul
+						logger.Info("performing startup health checks...",
+							zap.String("configSource", config.SourceName()),
+						)
 
 						// 检查数据库
 						if err := d.CheckDatabase(ctx); err != nil {
 							return err
 						}
 						// 检查缓存
+						// +co:begin redis
 						if err := d.CheckCache(ctx); err != nil {
 							return err
 						}
-						// 检查 Elasticsearch
+						// +co:end
+						// 检查 Elasticsearch。
+						//
+						// 这里只告警、不返回错误:ES 是可降级依赖,挂了业务顶多是搜不到,
+						// 而 postgres/redis 挂了任何请求都做不成。拿它拦住启动等于让整个
+						// 服务陪一个可选组件一起躺下,本地开发时还会变成「想跑起来就必须
+						// 先起一个 ES」。连通性由 /healthz 的 elasticSearch 项持续暴露。
+						// +co:begin elasticsearch
 						if err := d.CheckElasticSearch(ctx); err != nil {
-							return err
+							logger.Warn("elasticsearch unreachable, search will degrade", zap.Error(err))
 						}
+						// +co:end
 
 						logger.Info("starting server",
 							zap.String("addr", srv.Addr),
