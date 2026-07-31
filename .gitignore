@@ -2,3 +2,9 @@
 chart-packages
 
 Makefile
+
+# 证书/密钥不入库。sqlc.yaml 的 sslrootcert 指向仓库根的 pg_ca_pem.crt,
+# 需要 sqlc 连真实库校验查询时把 CA 放过来,它不会被提交。
+*.pem
+*.key
+*.crt
