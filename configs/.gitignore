@@ -1,0 +1,11 @@
+# 本地覆盖配置:放真实凭据用,不进版本库。
+# 用法:CONFIG_SOURCE=file CONFIG_FILE=configs/local.yml go run ./cmd/server
+local.yml
+local.yaml
+*.local.yml
+*.local.yaml
+
+# 证书/密钥不入库
+*.pem
+*.key
+*.crt

@@ -1,0 +1,141 @@
+# 预发布环境配置样例。
+#
+# 这份文件不含任何真实凭据,可以安全提交:密码/证书一律留占位符,
+# 部署时由 CI 或 Consul KV 覆盖。想本地起服务用 configs/dev.yml。
+#
+# 注意:所有 Duration 字段必须写成带单位的字符串("5s"/"1h"),
+# 裸数字解不出 durationpb,启动阶段就会报错。
+
+server:
+  addr: "0.0.0.0:30000"
+  http:
+    read_timeout: "10s"
+    write_timeout: "10s"
+    idle_timeout: "60s"
+  cors:
+    allowed_origins:
+      - https://pre.example.com
+
+data:
+  database:
+    postgres:
+      host: "postgres.pre.svc.cluster.local"
+      port: 5432
+      user: "app"
+      password: "REPLACE_ME"
+      db_name: "app"
+      timezone: "Asia/Shanghai"
+      pool:
+        max_conns: 20
+        min_conns: 5
+        max_conn_lifetime: "1h"
+        max_conn_idle_time: "5m"
+        ping_timeout: "5s"
+      tls:
+        enable: false
+        ssl_mode: "disable"
+        ca_pem: ""
+  # +co:begin redis
+  cache:
+    redis:
+      host: "redis.pre.svc.cluster.local"
+      port: 6379
+      username: "default"
+      password: "REPLACE_ME"
+      db: 0
+      dial_timeout: "5s"
+      read_timeout: "3s"
+      write_timeout: "3s"
+      pool_size: 10
+      min_idle_conns: 5
+      tls:
+        enable: false
+        insecure_skip_verify: false
+        ca_pem: ""
+  # +co:end
+
+observability:
+  enable: true
+  trace:
+    endpoint: "otel-collector.pre.svc.cluster.local:4318"
+    tls:
+      enable: false
+      insecure_skip_verify: false
+      ca_pem: ""
+  metric:
+    endpoint: "otel-collector.pre.svc.cluster.local:4318"
+    tls:
+      enable: false
+      insecure_skip_verify: false
+      ca_pem: ""
+  log:
+    endpoint: "otel-collector.pre.svc.cluster.local:4318"
+    tls:
+      enable: false
+      insecure_skip_verify: false
+      ca_pem: ""
+
+# +co:begin consul
+discovery:
+  consul:
+    addr: "consul.pre.svc.cluster.local:8500"
+    scheme: http
+    health_check: true
+    check:
+      ttl:
+        duration: "30s"
+        # 心跳间隔必须明显小于 duration,否则窗口边缘会被误判为 critical
+        ping_interval: "10s"
+      deregister_critical_service_after: "1m"
+    tls:
+      enable: false
+      insecure_skip_verify: false
+      ca_pem: ""
+# +co:end
+
+# +co:begin elasticsearch
+search:
+  elastic_search:
+    addresses:
+      - "http://elasticsearch.pre.svc.cluster.local:9200"
+    username: "elastic"
+    password: "REPLACE_ME"
+    tls:
+      enable: false
+      insecure_skip_verify: false
+      ca_pem: ""
+# +co:end
+
+log:
+  # application 是业务日志,framework 是 fx 框架自身的日志,两者独立控制
+  application:
+    level: info
+    format: json
+  framework:
+    log_level: info
+    error_level: error
+    format: json
+  # +co:begin elasticsearch
+  elasticsearch:
+    enable_request: false
+    enable_response: false
+  # +co:end
+
+# +co:begin casdoor
+auth:
+  casdoor:
+    endpoint: "http://casdoor.pre.svc.cluster.local:8000"
+    client_id: "REPLACE_ME"
+    client_secret: "REPLACE_ME"
+    organization_name: "REPLACE_ME"
+    application_name: "REPLACE_ME"
+    certificate: "REPLACE_ME"
+# +co:end
+
+# +co:begin minio
+store:
+  minio:
+    default_domain: "https://minio.pre.example.com"
+    # 按 bucket 覆盖默认域名,用于挂了独立 CDN 的桶
+    buckets: {}
+# +co:end

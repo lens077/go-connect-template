@@ -1,6 +1,28 @@
+# 本地开发配置样例。
+#
+# 这份文件不含任何真实凭据,可以安全提交:主机名一律指向 localhost,TLS 全部关闭。
+#
+# 密码分两类,别混:
+#   - postgres / redis / elasticsearch 用的是 infrastructure/<组件>/compose.yaml
+#     里写死的开发口令,两边必须一致 —— 写成占位符的话,照着 README 起完容器
+#     再 make dev 依然连不上,而报错只是一句 password authentication failed。
+#     改这里就要同步改对应的 compose(redis 的在 redis.conf)。
+#   - casdoor / minio 这类没有随仓库提供本地容器的外部服务仍是 REPLACE_ME,
+#     用到时自己填。
+#
+# 真实凭据请写进 configs/local.yml(已被 .gitignore 忽略):
+#
+#   CONFIG_SOURCE=file CONFIG_FILE=configs/local.yml go run ./cmd/server
+#
+# 注意:所有 Duration 字段必须写成带单位的字符串("5s"/"1h"),
+# 裸数字解不出 durationpb,启动阶段就会报错。
+
 server:
   addr: "0.0.0.0:30000"
-  timeout: 10
+  http:
+    read_timeout: "10s"
+    write_timeout: "10s"
+    idle_timeout: "60s"
   cors:
     allowed_origins:
       - http://localhost:3000
@@ -8,178 +30,143 @@ server:
 data:
   database:
     postgres:
-      host: "192.168.3.106"
+      host: "127.0.0.1"
       port: 5432
       user: "postgres"
-      password: "msdnmm"
       db_name: "postgres"
+      # 与 infrastructure/postgres/compose.yaml 的 POSTGRES_PASSWORD 一致。
+      # 真实密码放 configs/local.yml 或环境的配置中心,别提交
+      password: "postgres"
       tls:
-        enable: true
-        ssl_mode: "verify-ca"
-        ca_pem: |-
-          -----BEGIN CERTIFICATE-----
-          MIIDGzCCAgOgAwIBAgIQNe2bhLliexvL4/8S/r8aDDANBgkqhkiG9w0BAQsFADAY
-          MRYwFAYDVQQDEw1wb3N0Z3Jlc3FsLWNhMB4XDTI2MDQyODE1MDg1M1oXDTI3MDQy
-          ODE1MDg1M1owGDEWMBQGA1UEAxMNcG9zdGdyZXNxbC1jYTCCASIwDQYJKoZIhvcN
-          AQEBBQADggEPADCCAQoCggEBALCwEfRhVLEVDRbfL3zcRIJdwgo0FvyYu3y7H0N6
-          41jezBahW7JcYbetmkzEjiCFEJKXAWBgEfmKuoqp9ZrEEMqT77D7bbv0QxlhB0aD
-          37aODmbB1wwKLnUkirbIc4UTb/ixnNXHZ8js6n7F670AuBtEcCC/w08ClfZq6kw2
-          poqRctuGyOCbZ4Jo14AJzuEs+aQrnICmIuW1V4AvzUeCrMpWFwDQd7M6ujS+4sq2
-          Gu/DKpQra938x1ueqMFLq2pGCnR5+v8+/h14LPSTY68dqZk7yL8Kc1j9cWjfShFY
-          nfBB0PuYl42CdoY1aZ80kl3AnXa22uHeA71zRhMp5qlbFL8CAwEAAaNhMF8wDgYD
-          VR0PAQH/BAQDAgKkMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAPBgNV
-          HRMBAf8EBTADAQH/MB0GA1UdDgQWBBSod8zyZgXuH84q2AEcL7ID/psQ/TANBgkq
-          hkiG9w0BAQsFAAOCAQEATEnqkxTVYlf/Od1m+gsTV44SjpP/Vqb1Gq+VaTAHmTk1
-          WS4mFZMH3T70hSC7nHowtn+hmclm8J8jIfh80MeADVkOTGwvGnZECxlj6hTy7N4w
-          9BZcws4QJio+L3H15PAGSSJIOkyOmhes2cdCCXGUmojXZJAYm0Q2DDryNkJGaENF
-          fzx83Xpnxa8Ui6jLyPk3mR2ojeu14w5iaC6mSCy+n9DEkfbuu1zvymE/+ldU6jrH
-          x6ERRx+vNAiELnjGVb8vF+LfMyFEXvrR7U/Um2lhrYbqZr2uAUWZ+xnRcrNGRzLc
-          7gz2cFAMAGicJlXeUKuk0k4C3uWERXiVFEqblH/YzQ==
-          -----END CERTIFICATE-----
+        # 本地库一般不开 TLS。要连开了 TLS 的库时把 enable 置 true、
+        # ssl_mode 改成 verify-ca,并把 CA 证书整段贴进 ca_pem。
+        enable: false
+        ssl_mode: "disable"
+        ca_pem: ""
+        # ca_pem: |-
+        #   -----BEGIN CERTIFICATE-----
+        #   ...
+        #   -----END CERTIFICATE-----
       timezone: "Asia/Shanghai"
       pool:
         max_conns: 20
         min_conns: 5
-        max_conn_lifetime: 3600
-        max_conn_idle_time: 300
+        # Duration 字段一律写成带单位的字符串;裸数字解不出 durationpb,启动会直接失败
+        max_conn_lifetime: "1h"
+        max_conn_idle_time: "5m"
+        ping_timeout: "5s"
+  # +co:begin redis
   cache:
     redis:
-      host: "dragonfly.sumery.com"
-      port: 443
+      host: "127.0.0.1"
+      port: 6379
       tls:
-        enable: true
-        insecure_skip_verify: true
-        ca_pem: |-
-          -----BEGIN CERTIFICATE-----
-          MIIDCDCCAfCgAwIBAgIURrO2XvkIlNEyGXiVQRW8+zDaFwEwDQYJKoZIhvcNAQEL
-          BQAwHDEaMBgGA1UEAxMRbXktZ2xvYmFsLXJvb3QtY2EwHhcNMjYwNjA3MjE1MDQw
-          WhcNMjYwOTA1MjE1MDQwWjAcMRowGAYDVQQDExFteS1nbG9iYWwtcm9vdC1jYTCC
-          ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL8Bq8Ia9TqKFniw60wc0EBh
-          w59kj4rrHD9r0UfhLYcSchm+XblAhA4lmU9UhLv11yUrk/G7yakr/MN2lFiJ+VSq
-          y7MZqiglaE6aPJN4I0w+45j/UPRhFYN8pjOADTgUc/Z8a1ZOwXYqAGEhzQpvVzfD
-          O5CXJi+lfky/56xvVq6XpHjhO5kGo9zxPjS6+Bt5tJcpfUiXn2b8Ik/oqPkalVv5
-          YowDboditHkg0Y8mqVV4LKajVVoxJlvraAj8Jb9ZM3stYbvDuasyokFVIK1/ZpV/
-          LITckmg71vlMBkDjhC4ymBZq7ZxZZwakC4W8nQ8K/OwYEVjOrcrjbv1MgukRngUC
-          AwEAAaNCMEAwDgYDVR0PAQH/BAQDAgKkMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0O
-          BBYEFGpUpjkrAgkGxgikpv8LJn+9nr6wMA0GCSqGSIb3DQEBCwUAA4IBAQCvv78n
-          fWOfZebY7DmFecKx7Vy6Ozm3G6t8qLDCv/pzAA1WuNLFKYqL4H4V8b9t30Y4QXtG
-          QyqSpkUyR2L6Ji7iwbaJXVEzefe5VPULQ7qoBiL6iVZpE0bebGTpvicEZ2ldebjL
-          vpJmDQiWPuR1Yeuy1k1NiIbx4GiUO0D3Ujiy+kvGc0m947PdW19rNeGzoOfM5EhT
-          l3EgHYgFKtqM/+zBlYdTkIcpEdLujcyX+d1vixDC5aGENhYX7hTVb8vrdt455GJI
-          B/PgzPl6Es0EEG9gkP41KyZG3JFh5ME4ODoPqXfEDk6/yQtjYjOEzkUXVBGbMGkI
-          SUIGYmnQkqH+XprW
-          -----END CERTIFICATE-----
+        enable: false
+        insecure_skip_verify: false
+        ca_pem: ""
       username: "default"
-      password: "msdnmm"
+      # 与 infrastructure/redis/redis.conf 的 requirepass 一致
+      password: "devpassword"
       db: 0
-      dial_timeout: 5
-      read_timeout: 3
-      write_timeout: 3
+      dial_timeout: "5s"
+      read_timeout: "3s"
+      write_timeout: "3s"
       pool_size: 10
       min_idle_conns: 5
+  # +co:end
 
 observability:
-  enable: true
+  # 本地没起 collector 时置 false,否则每次导出都会打一条连接失败的日志
+  enable: false
   trace:
-    endpoint: otlp-http.sumery.com:443
+    endpoint: "127.0.0.1:4318"
     tls:
-      enable: true
-      insecure_skip_verify: true
+      enable: false
+      insecure_skip_verify: false
       ca_pem: ""
   metric:
-    endpoint: otlp-http.sumery.com:443
+    endpoint: "127.0.0.1:4318"
     tls:
-      enable: true
-      insecure_skip_verify: true
+      enable: false
+      insecure_skip_verify: false
       ca_pem: ""
   log:
-    endpoint: otlp-http.sumery.com:443
+    endpoint: "127.0.0.1:4318"
     tls:
-      enable: true
-      insecure_skip_verify: true
+      enable: false
+      insecure_skip_verify: false
       ca_pem: ""
 
+# +co:begin consul
 discovery:
   consul:
-    #addr: apikv.com:8500
-    addr: consul.sumery.com:443
+    addr: "127.0.0.1:8500"
     health_check: true
-    scheme: https
-    ttl:
-      # Consul Agent 期望的心跳时间间隔
-      duration: "30s"
-      # 单位: 秒
-      ping_interval_seconds: 1
+    scheme: http
+    check:
+      # Consul Agent 判定服务失活的 TTL 窗口
+      ttl:
+        duration: "30s"
+        # 心跳间隔必须明显小于 duration,否则窗口边缘会被误判为 critical
+        ping_interval: "10s"
+      # 持续 critical 超过这个时长就自动注销,避免僵尸实例堆积
+      deregister_critical_service_after: "1m"
     tls:
-      enable: true
-      insecure_skip_verify: true
-      ca_pem: |-
-        -----BEGIN CERTIFICATE-----
-        MIIBiDCCAS6gAwIBAgIUaRnx06lN9Otrp04ahTRKHn1RiqswCgYIKoZIzj0EAwIw
-        IjEgMB4GA1UEAxMXY29uc3VsLWludGVybmFsLXJvb3QtY2EwHhcNMjYwNDI4MDU0
-        NjU0WhcNMjYwNzI3MDU0NjU0WjAiMSAwHgYDVQQDExdjb25zdWwtaW50ZXJuYWwt
-        cm9vdC1jYTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJbtHpvGdmrfoz7jEN0n
-        E1mzKH6EZspngoAwGxOun/SySzuCYHtDlD6WApmR2PBGECjB8pqnrhBjldxoxy1S
-        rQujQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQW
-        BBTOJjbIw4D104OieckQuEw+HvZFezAKBggqhkjOPQQDAgNIADBFAiB8etd9EvnD
-        zp2IGw4o7dSTJ4Qvqv8+s1Z66pQ7aViucgIhAIKlHJla4awYBsz6CTmPY4M7VpYs
-        JTIJfRSsqGdq0gEj
-        -----END CERTIFICATE-----
+      enable: false
+      insecure_skip_verify: false
+      ca_pem: ""
+# +co:end
+
+# +co:begin elasticsearch
 search:
   elastic_search:
     addresses:
-      - https://es.sumery.com
-    username: elastic
-    password: XwjLbwoaCLvuJ7PwaAWtBkNO
+      - http://127.0.0.1:9200
+    username: "elastic"
+    # 与 infrastructure/elasticsearch/compose.yaml 的 ELASTIC_PASSWORD 一致。
+    # 那份 compose 的镜像大版本必须跟 go.mod 的 go-elasticsearch 对齐,
+    # 否则客户端发的兼容头会让服务端一律返回 400
+    password: "devpassword"
     tls:
-      enable: true
-      insecure_skip_verify: true
+      enable: false
+      insecure_skip_verify: false
       ca_pem: ""
-    tls:
-      enable: true
-      insecure_skip_verify: true
-      ca_pem: ""
+# +co:end
 
 log:
-  level: debug
-  format: console
-  es_log:
-    enable_request_log: true
-    enable_response_log: true
+  # application 是业务日志,framework 是 fx 框架自身的日志,两者独立控制:
+  # 调试业务时把 application 调到 debug,不必被 fx 的依赖图刷屏
+  application:
+    level: debug
+    format: console
+  framework:
+    log_level: info
+    error_level: error
+    format: console
+  # +co:begin elasticsearch
+  elasticsearch:
+    enable_request: true
+    enable_response: true
+  # +co:end
 
+# +co:begin casdoor
 auth:
   casdoor:
-    endpoint: "http://apikv.com:8000"
-    client_id: "42c7d8cf13f021cb2af2"
-    client_secret: "5da8bf6f68c1980171e60ca02b44055c7201861f"
-    organization_name: "org-ecommerce"
-    application_name: "app-mall-web"
-    certificate: |-
-      -----BEGIN CERTIFICATE-----
-      MIIE2TCCAsGgAwIBAgIDAeJAMA0GCSqGSIb3DQEBCwUAMCYxDjAMBgNVBAoTBWFk
-      bWluMRQwEgYDVQQDDAtjZXJ0X2pxd3QzazAeFw0yNjA0MjgxMjQ0MTZaFw00NjA0
-      MjgxMjQ0MTZaMCYxDjAMBgNVBAoTBWFkbWluMRQwEgYDVQQDDAtjZXJ0X2pxd3Qz
-      azCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAL58/NLJ5jJ5D3IzeSxG
-      fqn6FXdhgdXTGSBh9jx+Hk0YBptJYUKqhy1P0ABkfABSWQTTXIm/a/FjnZVIMsqm
-      jeYQ2NZ4aJomnlPqzuVs8KZybkrhxr6hRY7dyU12fgbl4t2hPJT54qVSw8vZUFsq
-      8eWw9x1Lr6rT5egFweALrd3XhJRd2Y2QpnrilQ1caZjX4efsayu3qspUdFqHpbf2
-      Go28UA6Wm+HHQhG+l7EapdsoOdCoubHMv1eqacy/sTBmSuJRRltOvx2VFLBs6s3L
-      5e8QoiI37sgVkXuG85RPvKxq79vG0mxvSo1/8k4zQwV4UP72YQXPcrR9SAA9yrlZ
-      iaanRPsfREZ00mchuP0BDv40oWBpKrjy2xGW+9bG0wHJDOzWnyrY0YsPzSo7kSoo
-      vXoArDK2T4qD5T/yRDvCBKsO2gIQpdewrMclSY+HkZNp+SHM2fLAs/W1YI8MAiIg
-      3rJYmw9QjzhgCTl4qFYFjtzqDRbXtjxwDU/4nuIkZU1tMZhmlOrA7EzaxzFp4eL4
-      skLeM4VStDFI8ckIQUexbBPX2D39e3CrA9fesLQ5o5KHsAxQWcPmaDouPNTsYtN8
-      4hgTdxm+ooOz0B81va+irXmsrdL/ETD7bcQANqV2F2CBQqwfGhglQnW4oRQr3pML
-      re4a2JbH7YWl4Yv+2M1GZcR5AgMBAAGjEDAOMAwGA1UdEwEB/wQCMAAwDQYJKoZI
-      hvcNAQELBQADggIBALw4uNK2r8xuhGKNAwmrzaExlH934J5qIW3pFXgsMjBTcY2r
-      EPg5M53PtDitajoxZnyQmAtX+gEdxvFzQ1IzZ/Ls7mBgo1nQGMDFpbiImVPh88YW
-      dQhbedmlOCkWU4/aA73AoH30VHzTWbuo7NGPO7QltPkCax+Qh128sd+Fmv0IxFPl
-      FSjU2HlOcFLT2PnzICIJIWJVCA7kGlFNY3jMzqLnH6CC2IsyQ0b2PD6MNShW/x0Z
-      W7yB8rhsaZA18hV09jxXpzOyJyuwCaTiJ1Scw9tdbO5iRcvl8l0t/tJ1BLsa+Rb3
-      y5t5cpC2kst4vIfJZn2U3v0UWD7cZjqaI6IBDj4MHZMESK8WXcoUAyQ5nzlwys1n
-      dP0p9Xel6O+JjWbPC68/L2rbMLyEnqxeI0cCLScp/moLHhumEDoWBwjV+NPLvRYX
-      qXcGXK3IuXp7mkEug/W3z0yzTEyi0h0sefRotUhS+XxA8GxWkZqpARzRZiUP5quy
-      ZGrZjW4kKBalX3w4AfiI1HvRk4WNxY7u4N9BP0L9pdu2S/L0SLiU6f4v8GTQ7X7K
-      TnuVw4NeASzZt6P6QGdVZdctRVxQeVDa74VXXhgDUhQosS54JxXDr5O7jAJ9jdaQ
-      dIACjrLtZJ/U4e+rkqDpkUijg+HHHQpjkvnzmxkLMUr0O530BfT2ZVYC7yil
-      -----END CERTIFICATE-----
+    endpoint: "http://127.0.0.1:8000"
+    client_id: "REPLACE_ME"
+    client_secret: "REPLACE_ME"
+    organization_name: "REPLACE_ME"
+    application_name: "REPLACE_ME"
+    # Casdoor 应用的公钥证书,整段(含 BEGIN/END 行)贴进来
+    certificate: "REPLACE_ME"
+# +co:end
+
+# +co:begin minio
+store:
+  minio:
+    # 只配对外访问域名,不配 AK/SK:上传走各服务自己的 SDK 凭据,
+    # 这里只负责把库里存的相对 key 拼成可访问的 URL(见 internal/pkg/minio.go)
+    default_domain: "http://localhost:9000"
+    # 按 bucket 覆盖默认域名,用于挂了独立 CDN 的桶
+    buckets: {}
+# +co:end
