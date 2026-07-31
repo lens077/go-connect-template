@@ -1,0 +1,56 @@
+# monorepo 布局的构建上下文是仓库根,不是服务目录 ——
+# 服务与它依赖的公共包(api/、constants/)分属不同目录,
+# 只把服务目录当上下文就 COPY 不到公共包。
+# 配套的 make docker-build 里那句 cd ../.. 就是为此。
+
+ARG GOIMAGE=golang:1.26.1-alpine3.22
+FROM --platform=$BUILDPLATFORM ${GOIMAGE} AS compile
+
+ARG TARGETOS=linux
+ARG TARGETARCH
+ARG SERVICE={{.Name}}
+ARG VERSION=dev
+ARG GOPROXY=https://goproxy.cn,direct
+ARG CGOENABLED=0
+
+WORKDIR /build
+
+# 先只 COPY go.mod/go.sum 再 download:改业务代码时这一层命中缓存,
+# 不必每次重新拉依赖
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download -x
+
+# 微服务代码
+COPY services/${SERVICE}/ ./services/${SERVICE}/
+
+# 微服务依赖的公共包
+COPY api/ ./api/
+COPY constants/ ./constants/
+
+# 在仓库根编译,但入口指向对应微服务的 main.go。
+# -s -w 去掉符号表和调试信息,镜像能小一截;要留 pprof 符号就去掉这两个 flag。
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH CGO_ENABLED=$CGOENABLED \
+    go build -ldflags="-s -w -X main.Version=$VERSION" \
+    -o /app/service ./services/${SERVICE}/cmd/server && \
+    chmod +x /app/service
+
+FROM alpine:3.22 AS final
+
+RUN apk add --no-cache libc6-compat ca-certificates
+
+# 非 root 运行
+RUN addgroup -g 1000 appuser && adduser -u 1000 -G appuser -D appuser
+WORKDIR /app
+
+COPY --from=compile --chown=appuser:appuser /app/service /app/
+
+USER appuser
+
+# 默认从配置中心读;要改回本地文件就覆盖成 CONFIG_SOURCE=file + CONFIG_FILE
+ENV CONFIG_SOURCE=configcenter
+
+ENTRYPOINT ["/app/service"]

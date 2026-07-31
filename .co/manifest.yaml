@@ -1,0 +1,340 @@
+# co-cli 的裁剪清单。
+#
+# 这个目录以 . 开头,Go 工具链会整个忽略,所以它不参与 go build ./... ——
+# 模板仓库自身始终是一份「所有 feature 都打开且能编译」的完整参考实现,
+# 而 co-cli 只做减法:删文件、删标记行、删 go.mod require。
+#
+# 只做减法是刻意的。老版 CLI 用正则去改写克隆下来的源码,模板一改格式就静默失效;
+# 而删除的正确性能被模板仓库自己的 CI 兜住 —— 只要模板编译得过,留下的部分就编译得过。
+
+version: 1
+
+# 模板自身的 module 路径。生成时全量替换为目标 module(唯一串,替换安全)。
+module: github.com/lens077/go-connect-template
+
+# 模板里 SERVICE_NAME 之类的占位默认值,生成时按服务名替换
+placeholders:
+  service_name: org-service-v1
+
+# ---------------------------------------------------------------------------
+# 标记语法(marker)
+#
+#   行标记   <code>                    // +co:redis
+#            <code>                    // 说明文字 +co:redis
+#            必须是该行注释里的最后一个 token;逗号是「与」:+co:example,elasticsearch
+#            表示两个 feature 都启用才保留这一行。
+#
+#   块标记   // +co:begin redis  ...  // +co:end
+#            整段(含两行标记本身)在 feature 未启用时删除。可嵌套。
+#
+#   锚点     // +co:anchor <name>
+#            co resource add 插入新代码的位置;裁剪时保留,生成后原样留在文件里
+#            供下一次插入使用。
+#
+# YAML 里用 # 起头,语义完全相同。
+# .proto 里不放标记 —— protoc 会把注释原样搬进 conf.pb.go,且会把行尾注释挪到
+# 别的字段上,造成 begin/end 配对错乱。conf 里多一个用不上的 message 是无害的。
+# ---------------------------------------------------------------------------
+
+# 已知锚点,供 co resource add 定位
+anchors:
+  biz-providers: internal/biz/biz.go
+  service-providers: internal/service/service.go
+  data-providers: internal/data/data.go
+  server-imports: internal/server/server.go
+  server-handler-params: internal/server/server.go
+  server-handler-register: internal/server/server.go
+  config-source-cases: internal/pkg/config/source.go
+  config-source-names: internal/pkg/config/source.go
+
+# ---------------------------------------------------------------------------
+# 示例资源:模板里那套 search 的完整实现(proto + biz + data + service)。
+# co new 默认删掉它再按服务名生成一套新的;--keep-example 可保留。
+#
+# 保留它当参考读是有价值的,但它深度耦合 Elasticsearch,不适合当通用样板,
+# 所以走「删掉 + 重新生成」而不是「重命名」—— 重命名要改标识符,而 Search
+# 还与 conf.Search.ElasticSearch 撞名,全局替换必然误伤。
+# ---------------------------------------------------------------------------
+example:
+  name: search
+  needs: [elasticsearch]
+  files:
+    - api/search/v1/search.proto
+    - api/search/v1/search.pb.go
+    - api/search/v1/search_pb.ts
+    - api/search/v1/searchv1connect/search.connect.go
+    - internal/biz/search.go
+    - internal/data/search.go
+    - internal/service/search.go
+    - internal/data/schema/0001_products.sql
+    - internal/data/queries/products.sql
+    - internal/data/models/models.go
+    - internal/data/models/products.sql.go
+    - internal/data/models/querier.go
+  # models/db.go 不能删:它只含 DBTX 接口与 Queries 壳子,
+  # internal/data/db_postgres.go 的 Data.DB() 返回值就是 models.DBTX。
+  # 删了它整个 data 包编译不过,而它又要等 sqlc generate 才会重新出现。
+  keep:
+    - internal/data/models/db.go
+
+# ---------------------------------------------------------------------------
+# Feature 定义
+#
+#   files    未启用时删除的文件(不存在则跳过,不报错)
+#   requires 未启用时从 go.mod DropRequire 的直接依赖;
+#            间接依赖交给 go mod tidy,不在这里枚举
+#   needs    依赖的其它 feature,启用本项时自动带上
+# ---------------------------------------------------------------------------
+features:
+  postgres:
+    title: PostgreSQL (pgx + sqlc)
+    group: database
+    default: true
+    files:
+      - internal/data/db_postgres.go
+      - sqlc.yaml
+      - infrastructure/postgres/compose.yaml
+    requires:
+      - github.com/jackc/pgx/v5
+      - github.com/exaring/otelpgx
+    # 启动健康检查里连不上库就直接退出,所以是硬依赖
+    dev_compose: infrastructure/postgres/compose.yaml
+    dev_required: true
+
+  redis:
+    title: Redis 缓存
+    group: cache
+    default: true
+    files:
+      - internal/data/cache_redis.go
+      - infrastructure/redis/compose.yaml
+      - infrastructure/redis/redis.conf
+    requires:
+      - github.com/redis/go-redis/v9
+    dev_compose: infrastructure/redis/compose.yaml
+    dev_required: true
+
+  elasticsearch:
+    title: Elasticsearch 检索
+    group: search
+    default: true
+    files:
+      - internal/data/search_elasticsearch.go
+      - internal/pkg/log/es.go
+      - infrastructure/elasticsearch/compose.yaml
+    requires:
+      - github.com/elastic/go-elasticsearch/v9
+      # elastic-transport 本来是 go-elasticsearch 的间接依赖,但客户端要换掉
+      # http.RoundTripper 就得直接引它(v9 没有 elasticsearch.WithTransport),
+      # 于是它成了直接依赖,也就得在这里一起删
+      - github.com/elastic/elastic-transport-go/v8
+    # ES 是可降级依赖:启动时连不上只告警,不拦启动(见 cmd/server/main.go)
+    dev_compose: infrastructure/elasticsearch/compose.yaml
+
+  casdoor:
+    title: Casdoor 身份认证
+    group: iam
+    default: true
+    files:
+      - internal/data/auth_casdoor.go
+    requires:
+      - github.com/casdoor/casdoor-go-sdk
+
+  minio:
+    title: 对象存储 URL 拼接
+    group: store
+    default: true
+    files:
+      - internal/pkg/minio.go
+      - internal/pkg/minio_test.go
+    # 只做字符串拼接,不引 minio SDK:上传由各服务自带的客户端负责
+    requires: []
+
+  consul:
+    title: Consul 服务注册与发现
+    group: discovery
+    default: true
+    files:
+      - internal/pkg/registry/consul.go
+      - internal/pkg/registry/registry_test.go
+      - infrastructure/consul/compose.yaml
+    requires:
+      - github.com/hashicorp/consul/api
+    # make dev 显式传 CONSUL_ENABLED=false,所以本地起不起都行
+    dev_compose: infrastructure/consul/compose.yaml
+
+  # 配置数据源。file 是零依赖的本地 YAML,始终保留,保证「克隆下来就能跑」;
+  # consul 源与上面的 consul 注册中心共用同一个客户端库,故 needs 它。
+  config-file:
+    title: 配置源 - 本地文件
+    group: config-source
+    default: true
+    always: true
+    files:
+      - internal/pkg/config/source_file.go
+
+  config-consul:
+    title: 配置源 - Consul KV
+    group: config-source
+    default: true
+    needs: [consul]
+    files:
+      - internal/pkg/config/source_consul.go
+
+  # 配置中心源要求同仓库跑着 config-service,所以只有 monorepo 布局强制启用它
+  # (见 layouts.monorepo.features)。独立仓库也可以显式选,但得自己保证
+  # CONFIG_CENTER_ADDR 指得到一个真实的 config-service。
+  #
+  # api/config 是 config-service 的契约副本,只服务于这个数据源,故随它一起裁剪。
+  # 它不是本服务自己的 API,monorepo 下由 shared_proto 保证多个服务共用同一份。
+  config-configcenter:
+    title: 配置源 - 配置中心(config-service)
+    group: config-source
+    files:
+      - internal/pkg/config/source_configcenter.go
+      - api/config
+
+groups:
+  database:
+    title: 数据库
+    order: 10
+    required: true
+    exclusive: true
+    members: [postgres]
+    # mysql / sqlite 暂不提供。加进来时:在 features 下补对应条目、
+    # 加进 members、并把 internal/data/db_<driver>.go 写进模板本体
+    # (放在模板里而不是 .co/ 下,才能被模板自己的 CI 编译到)。
+  cache:
+    title: 缓存
+    order: 20
+    exclusive: true
+    members: [redis]
+  search:
+    title: 检索
+    order: 30
+    exclusive: true
+    members: [elasticsearch]
+  iam:
+    title: 身份认证
+    order: 40
+    exclusive: true
+    members: [casdoor]
+  store:
+    title: 对象存储
+    order: 50
+    exclusive: true
+    members: [minio]
+  discovery:
+    title: 服务注册与发现
+    order: 60
+    exclusive: true
+    members: [consul]
+  config-source:
+    title: 配置数据源
+    order: 70
+    exclusive: false
+    members: [config-file, config-consul, config-configcenter]
+
+# ---------------------------------------------------------------------------
+# 布局
+#
+#   service_dir     服务落在目标根目录下的哪里
+#   proto_dir       api/ 整棵树落在哪里。模板里 api/<x>/v1/... 会被搬到
+#                   <proto_dir>/<x>/v1/...;standalone 下两者相同,等于不搬。
+#                   monorepo 把 proto 抽到服务目录之外,因为它归根仓库统一管理。
+#   service_module  服务包的导入前缀。standalone 就是 module 本身;
+#                   monorepo 下服务没有自己的 go.mod,要在根 module 后面接上路径。
+#   go_mod          false 表示不生成 go.mod
+#   features        该布局强制启用的 feature,与用户的选择取并集
+#   shared_proto    api/ 下由整个仓库共用的子树名。搬 proto 时目标已存在就保留
+#                   目标那份,不报冲突 —— 同一个 monorepo 里生成第二个服务时,
+#                   这些子树必然已经被第一个服务带进去了。
+# ---------------------------------------------------------------------------
+layouts:
+  standalone:
+    title: 独立仓库
+    service_dir: "."
+    proto_dir: api
+    service_module: "{{.Module}}"
+    go_mod: true
+  monorepo:
+    title: 单体仓库(ecommerce)
+    service_dir: backend/services/{{.Name}}
+    proto_dir: backend/api
+    service_module: "{{.Module}}/services/{{.Name}}"
+    # monorepo 下服务不带自己的 go.mod,统一用根 module
+    go_mod: false
+    # 这些文件在 monorepo 里由根仓库统一提供,生成时删掉服务内的副本
+    drop:
+      - go.mod
+      - go.sum
+      - buf.yaml
+      - buf.lock
+      - buf.gen.yaml
+      - buf.gen.ts.yaml
+      - third_party
+      - okteto.yaml
+      - .stignore
+    # 配置中心源在 monorepo 里是默认设施:config-service 就跑在同一个仓库里。
+    # 实现本体在模板里(internal/pkg/config/source_configcenter.go),
+    # 不在这儿的 overlay 下 —— 放模板里才会被模板自己的 CI 编译到。
+    features:
+      - config-configcenter
+    # api/config 是 config-service 的契约,整个 monorepo 共用一份。
+    # 生成第二个服务时它已经在 backend/api/config 了,保留仓库里那份。
+    shared_proto:
+      - config
+    # overlay 目录的结构就是目标路径:渲染后去掉 .tmpl 后缀,
+    # 按同样的相对路径写进 service_dir,覆盖同名文件。
+    #   scaffold/monorepo/Makefile.tmpl -> backend/services/<name>/Makefile
+    overlay: scaffold/monorepo
+
+# ---------------------------------------------------------------------------
+# 生成后要跑的命令。缺对应工具时跳过并告警,不让 co new 失败 ——
+# 用户可以先拿到骨架,再按 co doctor 的提示补工具。
+# ---------------------------------------------------------------------------
+hooks:
+  post_generate:
+    # --path 不是可省的优化,是必须的:third_party/google/protobuf/ 下那份
+    # WKT 副本与 buf 内置的 WKT 同名,不加 --path 的整模块构建会直接报
+    # "name conflict over google.protobuf.Any"。Makefile 的 api/conf 两个
+    # 目标同样带 --path,这里保持一致。
+    #
+    # buf 只在 standalone 下自动跑:monorepo 的 buf.yaml 在仓库根,
+    # --path 要写成相对根的 api/<name>,生成的服务目录里跑不了。
+    # monorepo 请在服务目录执行 make api && make conf。
+    - name: buf-api
+      cmd: [buf, generate, --template, buf.gen.yaml, --path, api]
+      when_layout: standalone
+    - name: buf-conf
+      cmd: [buf, generate, --template, buf.gen.yaml, --path, internal/conf]
+      when_layout: standalone
+    - name: sqlc
+      # 新资源的 schema/queries 是刚写出来的,models/ 里还没有对应代码;
+      # 不跑这一步,生成的 data 层引用不到 models.XxxParams,直接编译不过
+      cmd: [sqlc, generate]
+      when: postgres
+    - name: gofmt
+      cmd: [gofmt, -w, .]
+    - name: tidy
+      cmd: [go, mod, tidy]
+      when_layout: standalone
+
+# ---------------------------------------------------------------------------
+# co doctor 检查的外部工具
+# ---------------------------------------------------------------------------
+tools:
+  - name: go
+    required: true
+  - name: sqlc
+    required: false
+    hint: "go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest"
+  - name: buf
+    required: false
+    hint: "go install github.com/bufbuild/buf/cmd/buf@latest"
+  - name: protoc-gen-go
+    required: false
+    hint: "go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"
+  - name: protoc-gen-connect-go
+    required: false
+    hint: "go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest"

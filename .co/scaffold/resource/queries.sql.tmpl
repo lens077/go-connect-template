@@ -1,0 +1,62 @@
+-- 每条查询上方的 -- name: 注释决定生成的方法名与返回形态:
+--   :one       返回单行,无结果时返回 pgx.ErrNoRows
+--   :many      返回多行
+--   :exec      不返回行
+--   :execrows  返回受影响行数(用于区分「改到了」和「本来就不存在」)
+
+-- name: Get{{.Pascal}} :one
+SELECT *
+FROM {{.Table}}
+WHERE id = $1
+  AND deleted_at IS NULL;
+
+-- name: Get{{.Pascal}}ByCode :one
+SELECT *
+FROM {{.Table}}
+WHERE code = $1
+  AND deleted_at IS NULL;
+
+-- name: List{{.PascalPlural}} :many
+-- keyset 分页而不是 OFFSET:OFFSET 要扫过并丢弃前面所有行,翻到深页会线性变慢。
+-- 游标是 (created_at, id) 元组 —— 只用 created_at 会在同一时刻的多行上漏数据。
+SELECT *
+FROM {{.Table}}
+WHERE deleted_at IS NULL
+  AND (sqlc.narg('status')::TEXT IS NULL OR status = sqlc.narg('status')::TEXT)
+  AND (sqlc.narg('cursor_created_at')::TIMESTAMPTZ IS NULL
+    OR (created_at, id) < (sqlc.narg('cursor_created_at')::TIMESTAMPTZ, sqlc.narg('cursor_id')::BIGINT))
+ORDER BY created_at DESC, id DESC
+LIMIT sqlc.arg('page_size');
+
+-- name: Count{{.PascalPlural}} :one
+SELECT count(*)
+FROM {{.Table}}
+WHERE deleted_at IS NULL
+  AND (sqlc.narg('status')::TEXT IS NULL OR status = sqlc.narg('status')::TEXT);
+
+-- name: Create{{.Pascal}} :one
+INSERT INTO {{.Table}} (code, name, description, price, status, main_media_key, quantity)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING *;
+
+-- name: Update{{.Pascal}} :one
+-- COALESCE + narg 实现部分更新:传 NULL 的字段保持原值,
+-- 免得为每种字段组合各写一条 UPDATE
+UPDATE {{.Table}}
+SET name           = COALESCE(sqlc.narg('name'), name),
+    description    = COALESCE(sqlc.narg('description'), description),
+    price          = COALESCE(sqlc.narg('price'), price),
+    status         = COALESCE(sqlc.narg('status'), status),
+    main_media_key = COALESCE(sqlc.narg('main_media_key'), main_media_key),
+    quantity       = COALESCE(sqlc.narg('quantity'), quantity),
+    updated_at     = now()
+WHERE id = sqlc.arg('id')
+  AND deleted_at IS NULL
+RETURNING *;
+
+-- name: SoftDelete{{.Pascal}} :execrows
+UPDATE {{.Table}}
+SET deleted_at = now(),
+    updated_at = now()
+WHERE id = $1
+  AND deleted_at IS NULL;

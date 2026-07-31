@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package {{.ProtoPackage}};
+
+import "third_party/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "{{.Module}}/{{.APIDir}};{{.GoPkgAlias}}";
+
+service {{.Pascal}}Service {
+  rpc Create{{.Pascal}}(Create{{.Pascal}}Request) returns (Create{{.Pascal}}Response) {}
+  rpc Get{{.Pascal}}(Get{{.Pascal}}Request) returns (Get{{.Pascal}}Response) {}
+  rpc List{{.PascalPlural}}(List{{.PascalPlural}}Request) returns (List{{.PascalPlural}}Response) {}
+  rpc Update{{.Pascal}}(Update{{.Pascal}}Request) returns (Update{{.Pascal}}Response) {}
+  rpc Delete{{.Pascal}}(Delete{{.Pascal}}Request) returns (Delete{{.Pascal}}Response) {}
+}
+
+message {{.Pascal}} {
+  int64 id = 1;
+  string code = 2;
+  string name = 3;
+  string description = 4;
+  // 金额在库里是 NUMERIC(定点十进制),只在出口转成 double。
+  // 见 internal/pkg/money —— 不要拿它做累加运算。
+  double price = 5;
+  string status = 6;
+  // 库里存的是相对 key,这里返回的是拼好域名的绝对 URL
+  string main_media_url = 7;
+  int64 quantity = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message Create{{.Pascal}}Request {
+  string code = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 64
+  ];
+  string name = 2 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255
+  ];
+  string description = 3;
+  double price = 4 [
+    (buf.validate.field).double.gte = 0
+  ];
+  string status = 5;
+  // 相对 key,不要传绝对 URL:域名由服务端按配置拼
+  string main_media_key = 6;
+  int64 quantity = 7 [
+    (buf.validate.field).int64.gte = 0
+  ];
+}
+
+message Create{{.Pascal}}Response {
+  {{.Pascal}} {{.Name}} = 1;
+}
+
+message Get{{.Pascal}}Request {
+  int64 id = 1 [
+    (buf.validate.field).int64.gt = 0
+  ];
+}
+
+message Get{{.Pascal}}Response {
+  {{.Pascal}} {{.Name}} = 1;
+}
+
+message List{{.PascalPlural}}Request {
+  // 可选状态过滤;空串表示不过滤
+  string status = 1;
+  // keyset 分页游标,取上一页最后一条的 created_at / id 原样回传。
+  // 用 keyset 而不是 offset:offset 要扫过并丢弃前面所有行,深页会线性变慢。
+  google.protobuf.Timestamp cursor_created_at = 2;
+  int64 cursor_id = 3;
+  int32 page_size = 4 [
+    (buf.validate.field).int32.gte = 0,
+    (buf.validate.field).int32.lte = 200
+  ];
+}
+
+message List{{.PascalPlural}}Response {
+  repeated {{.Pascal}} {{.Table}} = 1;
+  int64 total = 2;
+  // 下一页游标;没有更多数据时不设置
+  google.protobuf.Timestamp next_cursor_created_at = 3;
+  int64 next_cursor_id = 4;
+}
+
+message Update{{.Pascal}}Request {
+  int64 id = 1 [
+    (buf.validate.field).int64.gt = 0
+  ];
+  // 部分更新:未设置的字段保持原值。用 optional 而非零值判断 ——
+  // 「把 description 改成空串」和「不改 description」必须能区分开。
+  optional string name = 2;
+  optional string description = 3;
+  optional double price = 4;
+  optional string status = 5;
+  optional string main_media_key = 6;
+  optional int64 quantity = 7;
+}
+
+message Update{{.Pascal}}Response {
+  {{.Pascal}} {{.Name}} = 1;
+}
+
+message Delete{{.Pascal}}Request {
+  int64 id = 1 [
+    (buf.validate.field).int64.gt = 0
+  ];
+}
+
+message Delete{{.Pascal}}Response {
+  // 软删除是否命中。false 表示这条本来就不存在或已被删过。
+  bool deleted = 1;
+}

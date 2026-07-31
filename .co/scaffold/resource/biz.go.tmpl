@@ -1,0 +1,118 @@
+package biz
+
+import (
+	"context"
+	"errors"
+	"time"
+)
+
+// biz 层是纯业务:只认领域对象与 Repo 接口,不认 pgx、不认 protobuf。
+// 换存储只需另写一个 {{.Pascal}}Repo 实现,这一层不用动。
+
+// 领域错误。data 层把存储层的错误(如 pgx.ErrNoRows)翻译成这些,
+// service 层再把它们映射成 connect 的错误码 —— 三层各自只认自己那套。
+var (
+	Err{{.Pascal}}NotFound      = errors.New("{{.Name}} not found")
+	Err{{.Pascal}}AlreadyExists = errors.New("{{.Name}} already exists")
+)
+
+type {{.Pascal}} struct {
+	ID           int64     `json:"id"`
+	Code         string    `json:"code"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description"`
+	Price        float64   `json:"price"`
+	Status       string    `json:"status"`
+	// 存的是相对 key;对外返回的 URL 由 service 层按配置拼
+	MainMediaKey string    `json:"main_media_key"`
+	Quantity     int64     `json:"quantity"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+type Create{{.Pascal}}Params struct {
+	Code         string
+	Name         string
+	Description  string
+	Price        float64
+	Status       string
+	MainMediaKey string
+	Quantity     int64
+}
+
+// Update{{.Pascal}}Params 指针字段表示「不改」,与「改成零值」区分开。
+// 用值类型 + 零值判断会导致「把 description 清空」这类操作永远做不到。
+type Update{{.Pascal}}Params struct {
+	ID           int64
+	Name         *string
+	Description  *string
+	Price        *float64
+	Status       *string
+	MainMediaKey *string
+	Quantity     *int64
+}
+
+// List{{.Pascal}}Params keyset 分页参数。Cursor 取上一页最后一条的
+// (CreatedAt, ID),为 nil 表示取第一页。
+type List{{.Pascal}}Params struct {
+	Status          *string
+	CursorCreatedAt *time.Time
+	CursorID        *int64
+	PageSize        int32
+}
+
+type List{{.Pascal}}Result struct {
+	Items []{{.Pascal}}
+	Total int64
+}
+
+// {{.Pascal}}Repo 存储接口,由 internal/data 实现
+type {{.Pascal}}Repo interface {
+	Create(ctx context.Context, p Create{{.Pascal}}Params) (*{{.Pascal}}, error)
+	Get(ctx context.Context, id int64) (*{{.Pascal}}, error)
+	List(ctx context.Context, p List{{.Pascal}}Params) (*List{{.Pascal}}Result, error)
+	Update(ctx context.Context, p Update{{.Pascal}}Params) (*{{.Pascal}}, error)
+	// Delete 软删除,返回是否命中
+	Delete(ctx context.Context, id int64) (bool, error)
+}
+
+const (
+	default{{.Pascal}}PageSize = 20
+	max{{.Pascal}}PageSize     = 200
+)
+
+type {{.Pascal}}UseCase struct {
+	repo {{.Pascal}}Repo
+}
+
+func New{{.Pascal}}UseCase(repo {{.Pascal}}Repo) *{{.Pascal}}UseCase {
+	return &{{.Pascal}}UseCase{repo: repo}
+}
+
+func (uc *{{.Pascal}}UseCase) Create(ctx context.Context, p Create{{.Pascal}}Params) (*{{.Pascal}}, error) {
+	return uc.repo.Create(ctx, p)
+}
+
+func (uc *{{.Pascal}}UseCase) Get(ctx context.Context, id int64) (*{{.Pascal}}, error) {
+	return uc.repo.Get(ctx, id)
+}
+
+func (uc *{{.Pascal}}UseCase) List(ctx context.Context, p List{{.Pascal}}Params) (*List{{.Pascal}}Result, error) {
+	// 分页上限在 biz 层兜一道,不依赖调用方守规矩:
+	// proto 的 validate 只挡得住走 RPC 进来的请求,内部直接调 UseCase 的绕不过这里
+	if p.PageSize <= 0 {
+		p.PageSize = default{{.Pascal}}PageSize
+	}
+	if p.PageSize > max{{.Pascal}}PageSize {
+		p.PageSize = max{{.Pascal}}PageSize
+	}
+	return uc.repo.List(ctx, p)
+}
+
+func (uc *{{.Pascal}}UseCase) Update(ctx context.Context, p Update{{.Pascal}}Params) (*{{.Pascal}}, error) {
+	return uc.repo.Update(ctx, p)
+}
+
+func (uc *{{.Pascal}}UseCase) Delete(ctx context.Context, id int64) (bool, error) {
+	return uc.repo.Delete(ctx, id)
+}

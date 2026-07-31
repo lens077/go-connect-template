@@ -1,0 +1,173 @@
+package service
+
+import (
+	"context"
+	"errors"
+
+	"connectrpc.com/connect"
+	v1 "{{.Module}}/{{.APIDir}}"
+	"{{.Module}}/{{.APIDir}}/{{.ConnectPkg}}"
+	"{{.ServiceModule}}/internal/biz"
+{{- if .Features.minio}}
+	confv1 "{{.ServiceModule}}/internal/conf/v1"
+	"{{.ServiceModule}}/internal/pkg"
+{{- end}}
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+// service 层只做三件事:解请求、调 UseCase、把结果和错误翻译成 connect 的形状。
+// 任何业务判断都不该出现在这里 —— 放进 biz,否则换传输协议时会跟着搬家。
+
+var _ {{.ConnectPkg}}.{{.Pascal}}ServiceHandler = (*{{.Pascal}}Service)(nil)
+
+type {{.Pascal}}Service struct {
+	uc *biz.{{.Pascal}}UseCase
+{{- if .Features.minio}}
+	// 拼对象存储 URL 用;只读 store 段,不持有任何凭据
+	store *confv1.Store
+{{- end}}
+}
+
+func New{{.Pascal}}Service(
+	uc *biz.{{.Pascal}}UseCase,
+{{- if .Features.minio}}
+	cfg *confv1.Bootstrap,
+{{- end}}
+) {{.ConnectPkg}}.{{.Pascal}}ServiceHandler {
+	return &{{.Pascal}}Service{
+		uc: uc,
+{{- if .Features.minio}}
+		store: cfg.GetStore(),
+{{- end}}
+	}
+}
+
+func (s *{{.Pascal}}Service) Create{{.Pascal}}(ctx context.Context, req *connect.Request[v1.Create{{.Pascal}}Request]) (*connect.Response[v1.Create{{.Pascal}}Response], error) {
+	m, err := s.uc.Create(ctx, biz.Create{{.Pascal}}Params{
+		Code:         req.Msg.GetCode(),
+		Name:         req.Msg.GetName(),
+		Description:  req.Msg.GetDescription(),
+		Price:        req.Msg.GetPrice(),
+		Status:       req.Msg.GetStatus(),
+		MainMediaKey: req.Msg.GetMainMediaKey(),
+		Quantity:     req.Msg.GetQuantity(),
+	})
+	if err != nil {
+		return nil, s.toConnectErr(err)
+	}
+	return connect.NewResponse(&v1.Create{{.Pascal}}Response{ {{.Pascal}}: s.to{{.Pascal}}PB(m)}), nil
+}
+
+func (s *{{.Pascal}}Service) Get{{.Pascal}}(ctx context.Context, req *connect.Request[v1.Get{{.Pascal}}Request]) (*connect.Response[v1.Get{{.Pascal}}Response], error) {
+	m, err := s.uc.Get(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, s.toConnectErr(err)
+	}
+	return connect.NewResponse(&v1.Get{{.Pascal}}Response{ {{.Pascal}}: s.to{{.Pascal}}PB(m)}), nil
+}
+
+func (s *{{.Pascal}}Service) List{{.PascalPlural}}(ctx context.Context, req *connect.Request[v1.List{{.PascalPlural}}Request]) (*connect.Response[v1.List{{.PascalPlural}}Response], error) {
+	params := biz.List{{.Pascal}}Params{PageSize: req.Msg.GetPageSize()}
+
+	// 空串表示不过滤:proto3 的标量分不清「没传」和「传了空串」,
+	// 这里按「空串 = 不过滤」约定,与 List 的语义一致
+	if status := req.Msg.GetStatus(); status != "" {
+		params.Status = &status
+	}
+	if ts := req.Msg.GetCursorCreatedAt(); ts != nil {
+		t := ts.AsTime()
+		params.CursorCreatedAt = &t
+		id := req.Msg.GetCursorId()
+		params.CursorID = &id
+	}
+
+	result, err := s.uc.List(ctx, params)
+	if err != nil {
+		return nil, s.toConnectErr(err)
+	}
+
+	items := make([]*v1.{{.Pascal}}, 0, len(result.Items))
+	for i := range result.Items {
+		items = append(items, s.to{{.Pascal}}PB(&result.Items[i]))
+	}
+
+	resp := &v1.List{{.PascalPlural}}Response{
+		{{.PascalPlural}}: items,
+		Total:             result.Total,
+	}
+	// 下一页游标取本页最后一条。不足一页时不下发游标,前端据此判断到底了。
+	if int32(len(result.Items)) == params.PageSize && len(result.Items) > 0 {
+		last := result.Items[len(result.Items)-1]
+		resp.NextCursorCreatedAt = timestamppb.New(last.CreatedAt)
+		resp.NextCursorId = last.ID
+	}
+
+	return connect.NewResponse(resp), nil
+}
+
+func (s *{{.Pascal}}Service) Update{{.Pascal}}(ctx context.Context, req *connect.Request[v1.Update{{.Pascal}}Request]) (*connect.Response[v1.Update{{.Pascal}}Response], error) {
+	// proto 的 optional 字段直接就是指针,原样透传给 biz —— nil 表示不改。
+	// 不要在这里用 Get 系列取值,那会把「不改」变成「改成零值」。
+	m, err := s.uc.Update(ctx, biz.Update{{.Pascal}}Params{
+		ID:           req.Msg.GetId(),
+		Name:         req.Msg.Name,
+		Description:  req.Msg.Description,
+		Price:        req.Msg.Price,
+		Status:       req.Msg.Status,
+		MainMediaKey: req.Msg.MainMediaKey,
+		Quantity:     req.Msg.Quantity,
+	})
+	if err != nil {
+		return nil, s.toConnectErr(err)
+	}
+	return connect.NewResponse(&v1.Update{{.Pascal}}Response{ {{.Pascal}}: s.to{{.Pascal}}PB(m)}), nil
+}
+
+func (s *{{.Pascal}}Service) Delete{{.Pascal}}(ctx context.Context, req *connect.Request[v1.Delete{{.Pascal}}Request]) (*connect.Response[v1.Delete{{.Pascal}}Response], error) {
+	deleted, err := s.uc.Delete(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, s.toConnectErr(err)
+	}
+	return connect.NewResponse(&v1.Delete{{.Pascal}}Response{Deleted: deleted}), nil
+}
+
+// toConnectErr 把领域错误映射成 connect 状态码。
+// 认不出来的错误一律 Internal 且不回传原文:数据库报错里常带表名、列名甚至参数值。
+func (s *{{.Pascal}}Service) toConnectErr(err error) error {
+	switch {
+	case errors.Is(err, biz.Err{{.Pascal}}NotFound):
+		return connect.NewError(connect.CodeNotFound, err)
+	case errors.Is(err, biz.Err{{.Pascal}}AlreadyExists):
+		return connect.NewError(connect.CodeAlreadyExists, err)
+	default:
+		return connect.NewError(connect.CodeInternal, errors.New("internal error"))
+	}
+}
+
+func (s *{{.Pascal}}Service) to{{.Pascal}}PB(m *biz.{{.Pascal}}) *v1.{{.Pascal}} {
+	if m == nil {
+		return nil
+	}
+
+	pb := &v1.{{.Pascal}}{
+		Id:          m.ID,
+		Code:        m.Code,
+		Name:        m.Name,
+		Description: m.Description,
+		Price:       m.Price,
+		Status:      m.Status,
+		Quantity:    m.Quantity,
+		CreatedAt:   timestamppb.New(m.CreatedAt),
+		UpdatedAt:   timestamppb.New(m.UpdatedAt),
+	}
+
+{{- if .Features.minio}}
+	// 库里存相对 key,出口才拼域名:换 CDN 只改配置,不用刷全表
+	pb.MainMediaUrl = pkg.FormatObjectURL("{{.Table}}", m.MainMediaKey, s.store)
+{{- else}}
+	// 未启用对象存储 feature,直接透传 key。接了 CDN 之后改成拼绝对 URL。
+	pb.MainMediaUrl = m.MainMediaKey
+{{- end}}
+
+	return pb
+}

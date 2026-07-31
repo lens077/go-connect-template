@@ -1,0 +1,129 @@
+# {{.ServiceName}} — monorepo 布局。
+#
+# 与独立仓库版的差别只有一处:proto 归根仓库统一管理,所以 buf 必须在
+# 仓库根(../..)执行 —— buf 的 context directory 就是 buf.yaml 所在目录,
+# 在服务目录里跑会报「path is outside context directory」。
+
+VERSION ?= dev
+GOIMAGE ?= golang:1.26.1-alpine3.22
+GOOS ?= linux
+GOARCH ?= arm64
+CGOENABLED ?= 0
+
+# SERVICE 取自目录名而非写死:目录改名后 Makefile 不用跟着改
+SERVICE = $(shell basename $$PWD)
+
+# 下面几项都是部署环境相关的,生成时填的是 co 的默认值,按需改
+REPOSITORY ?= {{.DockerNamespace}}/$(SERVICE)
+REGISTER ?= {{.DockerRegistry}}
+ARM64 = linux/arm64
+AMD64 = linux/amd64
+
+# 服务注册用的 Consul(集群内域名)
+CONSUL_ADDR ?= {{.ConsulAddr}}
+# 读配置用的 Consul。与上面分开:集群内域名从宿主机通常不通,
+# 本地开发要指到一个能直连的地址
+CONSUL_KV_ADDR ?= 127.0.0.1:8500
+
+.PHONY: k8s-dev
+k8s-dev:
+	kubectl apply -f deploy
+
+# 配置数据源三选一,由 CONFIG_SOURCE 决定;三种情况下 Consul 都照常做服务注册/发现。
+#   make dev      -> 本地 YAML,不接配置中心
+#   make dev-kv   -> Consul KV
+#   make dev-cc   -> 配置中心 config-service
+#
+# 三种都只是「配置从哪来」,跟外部组件无关:postgres / redis 是启动硬依赖,
+# 跑之前先在仓库根按 infrastructure/<组件>/compose.yaml 起好。
+
+.PHONY: dev
+dev:
+	SERVICE_NAME="{{.ServiceName}}" \
+	CONSUL_ENABLED=false \
+	CONFIG_SOURCE=file \
+	CONFIG_FILE=configs/dev.yml \
+	go run cmd/server/main.go
+
+.PHONY: dev-kv
+dev-kv:
+	SERVICE_NAME="{{.ServiceName}}" \
+	CONSUL_ENABLED=true \
+	CONFIG_SOURCE=consul \
+	CONSUL_ADDR=$(CONSUL_KV_ADDR) \
+	CONSUL_PATH={{.ConsulKVPrefix}}/{{.Name}}/dev.yml \
+	CONSUL_SCHEME=http \
+	go run cmd/server/main.go
+
+.PHONY: dev-cc
+dev-cc:
+	SERVICE_NAME="{{.ServiceName}}" \
+	CONSUL_ENABLED=true \
+	CONFIG_SOURCE=configcenter \
+	CONFIG_CENTER_ADDR=http://127.0.0.1:30010 \
+	CONFIG_CENTER_NAMESPACE={{.Name}} \
+	CONFIG_CENTER_ENV=dev \
+	CONFIG_CENTER_KEY=bootstrap.yaml \
+	go run cmd/server/main.go
+
+.PHONY: test
+test:
+	go test -short -coverprofile=coverage.out ./...
+
+.PHONY: sqlc
+sqlc:
+	sqlc generate
+
+# 只重新生成本服务自己的 proto。全量重生成用 --path api,
+# 但那会连带改动别的服务的生成物,diff 里很难看出哪些是这次的改动。
+.PHONY: api
+api:
+	cd ../.. && buf generate --template buf.gen.yaml --path api/{{.Name}}
+	cd ../.. && buf generate --template buf.gen.ts.yaml --path api/{{.Name}}
+
+.PHONY: generate
+generate: api conf
+
+.PHONY: conf
+conf:
+	cd ../.. && buf generate --template buf.gen.yaml --path services/{{.Name}}/internal/conf
+
+.PHONY: docker-build
+docker-build:
+	@echo "构建的微服务: $(SERVICE)"
+	@echo "系统: $(GOOS) | CPU架构: $(GOARCH)"
+	@echo "镜像名: $(REPOSITORY):$(VERSION)"
+	cd ../.. && docker build . \
+	  -f ./services/$(SERVICE)/Dockerfile \
+	  --progress=plain \
+	  -t $(REPOSITORY):$(VERSION) \
+	  --build-arg SERVICE=$(SERVICE) \
+	  --build-arg CGOENABLED=$(CGOENABLED) \
+	  --build-arg GOIMAGE=$(GOIMAGE) \
+	  --build-arg GOOS=$(GOOS) \
+	  --build-arg GOARCH=$(GOARCH) \
+	  --build-arg VERSION=$(VERSION)
+
+.PHONY: docker-push
+docker-push:
+	docker tag $(REPOSITORY):$(VERSION) $(REGISTER)/$(REPOSITORY):$(VERSION)
+	docker push $(REGISTER)/$(REPOSITORY):$(VERSION)
+
+.PHONY: docker-deploy
+docker-deploy: docker-build docker-push
+
+.PHONY: docker-deployx
+docker-deployx:
+	@echo "构建的微服务: $(SERVICE) | 平台: $(ARM64),$(AMD64)"
+	cd ../.. && docker buildx build . \
+	  -f ./services/$(SERVICE)/Dockerfile \
+	  --progress=plain \
+	  -t $(REGISTER)/$(REPOSITORY):$(VERSION) \
+	  --build-arg SERVICE=$(SERVICE) \
+	  --build-arg CGOENABLED=$(CGOENABLED) \
+	  --build-arg GOIMAGE=$(GOIMAGE) \
+	  --build-arg VERSION=$(VERSION) \
+	  --platform $(ARM64),$(AMD64) \
+	  --push \
+	  --cache-from type=registry,ref=$(REGISTER)/$(REPOSITORY):cache \
+	  --cache-to type=registry,ref=$(REGISTER)/$(REPOSITORY):cache,mode=max
