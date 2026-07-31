@@ -18,14 +18,39 @@ CONSUL_ADDR=consul.example.com
 k8s-dev:
 	kubectl apply -f deploy
 
+# dev 默认走本地文件配置:克隆下来不装 Consul 也能直接起服务。
+# 需要跑 Consul 那套时用 make dev-consul。
 .PHONY: dev
-dev:
+dev: dev-file
+
+# 从 configs/dev.yml 读整份配置,不走配置中心。
+#
+# 「不走配置中心」不等于「不接外部组件」:postgres 与 redis 是启动硬依赖,
+# 连不上服务直接退出。先起本地依赖:
+#   docker compose -f infrastructure/postgres/compose.yaml up -d
+#   docker compose -f infrastructure/redis/compose.yaml up -d
+# elasticsearch 可选(连不上只在 /healthz 里显示不健康),要用检索再起:
+#   docker compose -f infrastructure/elasticsearch/compose.yaml up -d
+# 凭据已经和 configs/dev.yml 对好,不用改任何配置;建表 DDL 由 postgres 那份
+# compose 在库初始化时自动跑,也不用手动灌。
+.PHONY: dev-file
+dev-file:
+	SERVICE_NAME=org-service-v1 \
+	CONSUL_ENABLED=false \
+	CONFIG_SOURCE=file \
+	CONFIG_FILE=configs/dev.yml \
+	go run cmd/server/main.go
+
+# 从 Consul KV 读整份配置;CONSUL_PATH 指向存放 YAML 的 key
+.PHONY: dev-consul
+dev-consul:
 	SERVICE_NAME=org-service-v1 \
 	CONSUL_ENABLED=true \
+	CONFIG_SOURCE=consul \
 	CONSUL_ADDR=$(CONSUL_ADDR) \
-    CONSUL_PATH=ecommerce/user/dev.yml \
-    CONSUL_SCHEME=https \
-    CONSUL_INSECURE_SKIP_VERIFY=true \
+	CONSUL_PATH=ecommerce/user/dev.yml \
+	CONSUL_SCHEME=https \
+	CONSUL_INSECURE_SKIP_VERIFY=true \
 	go run cmd/server/main.go
 
 .PHONY: test

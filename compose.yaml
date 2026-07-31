@@ -1,18 +1,36 @@
+# 把本服务自己跑成容器(make docker-build 之后 make docker-run)。
+#
+# 这里的 org-service-v1 是服务名占位符,co new 生成时会整份替换成
+# <服务名>-service;.co/manifest.yaml 的 placeholders.service_name 就是它。
+# 手工从模板起项目时自己改掉。
+#
+# 本地依赖(postgres/redis/elasticsearch)不在这份文件里,各自一份:
+# infrastructure/<组件>/compose.yaml。分开是为了让「只想起个库」不必连带
+# 起一个还没构建出来的服务镜像。
 services:
 
-  ecommerce-search:
-    image: harbor.apikv.com:5443/ecommerce/search:dev
-    networks:
-      - ecommerce
-    ports:
-      - "0.0.0.0:30002:30002"
-    environment:
-      - RUN_MODE=prod
-      - CONFIG_CENTER=http://apikv.com:8500
-      - CONFIG_PATH=ecommerce/search/dev.yml
-    container_name: ecommerce-search
+  org-service-v1:
+    image: example/org-service-v1:dev
+    container_name: org-service-v1
     restart: on-failure:3
+    ports:
+      # 与 configs/*.yml 里的 server.addr 对齐
+      - "0.0.0.0:30000:30000"
+    environment:
+      # 变量名以 constants/env.go 为准:写错了不会报错,只会静默走默认值
+      - SERVICE_NAME=org-service-v1
+      - DEPLOYMENT_MODE=prod
+      # 整份配置从 Consul KV 读,CONSUL_PATH 指向存放 YAML 的那个 key。
+      # 换配置中心的话是 CONFIG_SOURCE=configcenter 加 CONFIG_CENTER_ADDR /
+      # CONFIG_CENTER_NAMESPACE / CONFIG_CENTER_ENV / CONFIG_CENTER_KEY。
+      - CONFIG_SOURCE=consul
+      - CONSUL_ENABLED=true
+      - CONSUL_ADDR=consul.example.com:8500
+      - CONSUL_SCHEME=http
+      - CONSUL_PATH=org/org-service-v1/prod.yml
+    networks:
+      - app-network
 
 networks:
-  ecommerce:
+  app-network:
     external: true
