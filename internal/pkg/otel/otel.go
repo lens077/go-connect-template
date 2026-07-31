@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"runtime"
 	"time"
 
@@ -194,16 +193,20 @@ func WithLogTLS(insecureSkipVerify bool, caPem []byte) LogOption {
 	}
 }
 
+// newResource 构造本服务的 OTel 资源属性。
+//
+// 版本走独立的 service.version 属性，不拼进 service.name：拼进去会让每发一个版本
+// 就多出一个「新服务」，后端里跨版本的曲线、告警和调用链全都断在版本边界上。
 func newResource(info meta.AppInfo) (*resource.Resource, error) {
-	return resource.Merge(resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,                                                  // URL
-			semconv.ServiceName(fmt.Sprintf("%s-%s", info.Name, info.Version)), // 应用名称
-			semconv.TelemetrySDKVersion(otel.Version()),                        // otel 的版本
-			semconv.DeploymentEnvironmentName(info.Environment),                // 部署环境
-			semconv.TelemetrySDKLanguageGo,                                     // 使用 otel 的语言
-			attribute.String("GolangVersion", runtime.Version()),               // Golang 版本
-		))
+	return resource.NewWithAttributes(
+		semconv.SchemaURL,                                    // URL
+		semconv.ServiceName(info.Name),                       // 应用名称
+		semconv.ServiceVersion(info.Version),                 // 应用版本
+		semconv.TelemetrySDKVersion(otel.Version()),          // otel 的版本
+		semconv.DeploymentEnvironmentName(info.Environment),  // 部署环境
+		semconv.TelemetrySDKLanguageGo,                       // 使用 otel 的语言
+		attribute.String("GolangVersion", runtime.Version()), // Golang 版本
+	), nil
 }
 
 func newPropagator() propagation.TextMapPropagator {
