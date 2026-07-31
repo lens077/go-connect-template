@@ -25,6 +25,8 @@ type ConsulRegistry struct {
 	Name   string
 	client *api.Client
 	logger *zap.Logger
+	// cancelPing 停止 TTL 心跳 goroutine;仅由 OnStart 写入、OnStop 读取,不并发访问。
+	cancelPing context.CancelFunc
 }
 
 type Option func(*options)
@@ -55,14 +57,12 @@ func WithTLS(insecureSkipVerify bool, caPem string) Option {
 var Module = fx.Module("registry",
 	fx.Provide(
 		// 提供 Consul 注册中心（支持优雅降级）
+		//
+		// 返回 (nil, nil) 表示「没有注册中心也照常跑」,因此所有下游消费者都必须自己判空。
 		func(lc fx.Lifecycle, logger *zap.Logger, conf *confv1.Bootstrap, appInfo meta.AppInfo) (*ConsulRegistry, error) {
-			if os.Getenv(constants.EnvConsulEnabled) == "false" {
-				logger.Info("Consul disenable by environment variable EnvConsulEnabled=false")
-				return nil, nil
-			}
-
-			if conf.Discovery == nil || conf.Discovery.Consul == nil || conf.Discovery.Consul.Addr == "" {
-				logger.Info("Consul not configured, service discovery disabled")
+			if os.Getenv(constants.EnvConsulEnabled) == "false" ||
+				conf.Discovery == nil || conf.Discovery.Consul == nil || conf.Discovery.Consul.Addr == "" {
+				logger.Info("Consul disabled or not configured, service discovery disabled")
 				return nil, nil
 			}
 			consulCfg := conf.Discovery.Consul
@@ -70,14 +70,15 @@ var Module = fx.Module("registry",
 			opts := []Option{
 				WithLogger(logger),
 			}
-			if consulCfg.Tls.Enable && consulCfg.Tls != nil {
+			// 先判空再取 Enable：反过来写会在未配置 tls 段时直接空指针 panic
+			if consulCfg.Tls != nil && consulCfg.Tls.Enable {
 				opts = append(opts, WithTLS(consulCfg.Tls.InsecureSkipVerify, consulCfg.Tls.CaPem))
 			}
 
 			reg, err := NewConsulRegistry(consulCfg.Addr, appInfo.ID, appInfo.Name, opts...)
 			if err != nil {
-				logger.Warn("failed to initialize Consul registry, service discovery disabled", zap.Error(err))
-				return nil, nil
+				logger.Warn("failed to initialize Consul client, service discovery disabled", zap.Error(err))
+				return nil, nil // 降级运行
 			}
 
 			// 使用生命周期钩子自动注册、启动心跳和注销
@@ -88,17 +89,26 @@ var Module = fx.Module("registry",
 						return nil // 允许应用继续运行
 					}
 
+					// OnStart 的 ctx 只是启动阶段的超时控制,启动一结束就会被取消。
+					// 心跳是常驻的,必须另起一个与应用同寿命的 context,否则 pinger
+					// 会在启动窗口结束时静默退出,服务随后被 Consul 判为 critical。
+					pingCtx, cancel := context.WithCancel(context.Background())
+					reg.cancelPing = cancel
+
 					// 启动 TTL 心跳 Pinger
-					go reg.TtlCheckPinger(ctx, conf)
+					go reg.TtlCheckPinger(pingCtx, conf)
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
-					if reg != nil {
-						// Deregister() 也会停止心跳，但我们不需要显式停止 TtlCheckPinger，
-						// 因为 Deregister 是 OnStop 的一部分，当应用退出时，TtlCheckPinger 的 context 也会关闭。
-						if err := reg.Deregister(); err != nil {
-							logger.Warn("failed to deregister from Consul", zap.Error(err))
-						}
+					// Register 失败时 cancelPing 为 nil；client 为 nil 时下面会空指针
+					if reg == nil || reg.client == nil {
+						return nil
+					}
+					if reg.cancelPing != nil {
+						reg.cancelPing()
+					}
+					if err := reg.Deregister(); err != nil {
+						logger.Warn("failed to deregister from Consul", zap.Error(err))
 					}
 					return nil
 				},
@@ -166,11 +176,11 @@ func (r *ConsulRegistry) Register(conf *confv1.Bootstrap, info meta.AppInfo) err
 		Name:    r.Name,
 		Address: host,
 		Port:    portNum,
+		// 服务名已经是 Name 字段，再塞进 Tags 只会让按 tag 过滤时永远命中
 		Tags: []string{
-			r.Name,
 			info.Version,
-			"fx",
-			"ttl",
+			constants.ConsulTagFx,
+			constants.ConsulTagTtl,
 		},
 		Check: &api.AgentServiceCheck{
 			// 使用 TTL 替换 HTTP/TCP 检查
