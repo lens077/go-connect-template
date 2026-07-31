@@ -16,7 +16,11 @@ syntax = "proto3";
 
 package google.api;
 
-import "google/api/http.proto";
+// 这里必须写成 third_party/... —— 本仓库的 buf 模块根是仓库根,third_party
+// 下的文件在模块里的路径就带着 third_party 前缀(内部 proto 引用 validate 时
+// 也是这么写的)。写成上游的 google/api/http.proto 会解析不到:那条路径下
+// buf 只认内置的 WKT,而 http.proto 不在 WKT 里,整个模块会 build 不过。
+import "third_party/google/api/http.proto";
 import "google/protobuf/descriptor.proto";
 
 option go_package = "google.golang.org/genproto/googleapis/api/annotations;annotations";
