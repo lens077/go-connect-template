@@ -45,7 +45,7 @@
 ### 5. 配置文件与构建脚本
 
 - [x] 新增 `configs/pre.yml`、`configs/.gitignore`
-- [x] `Makefile`:`dev`(= `dev-file`)/ `dev-file` / `dev-consul` 三个目标
+- [x] `Makefile`:`dev`(= `dev-file`)/ `dev-file` / `dev-cc` 两个本地目标
 - [x] `api` / `conf` 目标都带 `--path` —— 不是可省的优化:`third_party/google/protobuf/` 下那份 WKT 副本与 buf 内置的同名,不加 `--path` 会直接报 `name conflict over google.protobuf.Any`
 
 ### 6. `.co/` 契约目录
@@ -67,11 +67,23 @@
 - [x] `pg_ca_pem.crt` 从版本库移除
 - [x] `sqlc.yaml` 保留 `database.uri` 字段(sqlc 需要它),值改成 example 串,并在注释里说明可用 `${DATABASE_URL}` 展开把真实凭据挪到环境变量
 
-### 9. 配置中心契约
+### 9. 配置中心契约（已由第 11 条取代）
 
-- [x] 从 `ecommerce` 复制 `api/config/v1` 进模板,作为 config-service 的契约副本
-- [x] 补齐 `source_configcenter.go` 用到的 `constants/` 变量
-- [x] 在 `manifest.yaml` 里把 `api/config` 归到 `config-configcenter` feature 下,并由 `layouts.monorepo.shared_proto` 声明为整个 monorepo 共用
+- [x] ~~从 `ecommerce` 复制 `api/config/v1` 进模板~~ —— 现改用 config-center SDK 自带契约，不再复制 proto
+
+### 11. Consul KV → Config Center SDK
+
+对齐 `ecommerce/backend/services/cart`：
+
+- [x] 删除 `source_consul.go` 与 `CONFIG_SOURCE=consul` / `CONSUL_PATH`。Consul 只保留服务注册/发现
+- [x] 删除手写 `source_configcenter.go` 与复制的 `api/config/`
+- [x] 新增 `source_sdk.go`：经 `github.com/lens077/config-center/sdk/configsource` 读 selector，`type` 必须是 `config_center`
+- [x] 新增 `live.go` + `startWatch`：Config Center 支持热更新；file 源仍是启动读一次
+- [x] `CONFIG_SOURCE=configcenter` 快速失败，提示改用 `CONFIG_SOURCE_FILE`
+- [x] `make dev-cc` 改挂被忽略的 `configs/source.dev.yaml`;仓库只留 `.example`,避免机器 token 入库
+- [x] 部署/compose 改挂 `CONFIG_SOURCE_FILE`;Kubernetes 补 0400 Secret volume 与非 root `fsGroup: 1000`
+- [x] manifest：去掉 `config-consul` feature 与 `shared_proto: config`；`config-configcenter` 默认启用，
+      裁剪时同时 DropRequire SDK 与 selector 专属 Make/compose/deploy 段
 
 ### 10. Elasticsearch v9 API 迁移
 

@@ -20,14 +20,19 @@ services:
       # 变量名以 constants/env.go 为准:写错了不会报错,只会静默走默认值
       - SERVICE_NAME=org-service-v1
       - DEPLOYMENT_MODE=prod
-      # 整份配置从 Consul KV 读,CONSUL_PATH 指向存放 YAML 的那个 key。
-      # 换配置中心的话是 CONFIG_SOURCE=configcenter 加 CONFIG_CENTER_ADDR /
-      # CONFIG_CENTER_NAMESPACE / CONFIG_CENTER_ENV / CONFIG_CENTER_KEY。
-      - CONFIG_SOURCE=consul
+      # +co:begin config-configcenter
+      # 生产路径:CONFIG_SOURCE_FILE 指向 Config Center selector。
+      # 本地调试可改成 CONFIG_SOURCE=file + CONFIG_FILE=configs/dev.yml。
+      - CONFIG_SOURCE_FILE=/etc/config-source/source.yaml
+      # +co:end
       - CONSUL_ENABLED=true
       - CONSUL_ADDR=consul.example.com:8500
       - CONSUL_SCHEME=http
-      - CONSUL_PATH=org/org-service-v1/prod.yml
+    # +co:begin config-configcenter
+    volumes:
+      # 先复制 configs/source.dev.yaml.example,再只在被忽略的副本里填 token。
+      - ./configs/source.dev.yaml:/etc/config-source/source.yaml:ro
+    # +co:end
     networks:
       - app-network
 

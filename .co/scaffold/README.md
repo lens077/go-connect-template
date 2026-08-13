@@ -38,9 +38,8 @@ monorepo/     monorepo 布局专用的覆盖文件
 | `.DockerRegistry` | `ccr.ccs.tencentyun.com` | 镜像仓库地址 |
 | `.DockerNamespace` | `sumery` | 镜像命名空间 |
 | `.ConsulAddr` | `consul.app.com` | 服务注册用的 Consul 地址（集群内域名） |
-| `.ConsulKVPrefix` | `ecommerce` | Consul KV 里配置的路径前缀 |
 
-后四项是部署环境相关的，`co` 只填一个默认值，生成的 `Makefile` 里都写成 `?=`，
+后三项是部署环境相关的，`co` 只填一个默认值，生成的 `Makefile` 里都写成 `?=`，
 可用环境变量覆盖，不必改文件。
 
 ## 生成顺序

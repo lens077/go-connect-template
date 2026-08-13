@@ -1,0 +1,9 @@
+# 本地 Config Center selector 示例。复制为 source.dev.yaml 后,
+# 只在被忽略的副本里替换 token。
+type: config_center
+config_center:
+  address: http://127.0.0.1:30010
+  namespace: example
+  environment: dev
+  key: bootstrap.yaml
+  service_token: REPLACE_ME

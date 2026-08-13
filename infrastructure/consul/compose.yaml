@@ -1,7 +1,7 @@
 # 本地开发用的单节点 Consul,UI 在 http://127.0.0.1:8500。
 #
 # make dev 用不到它(CONSUL_ENABLED=false,配置也从本地文件读)。
-# 要验服务注册(CONSUL_ENABLED=true)或 make dev-consul(从 KV 读配置)才需要起。
+# 要验服务注册(CONSUL_ENABLED=true)才需要起。
 name: dev-consul
 
 services:

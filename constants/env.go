@@ -13,27 +13,18 @@ const (
 )
 
 // EnvConfigSource 选择整份 Bootstrap 配置的数据源。
-// 取值见 constants.ConfigSourceFile / ConfigSourceConsul / ConfigSourceConfigCenter,
+// 取值见 constants.ConfigSourceFile;生产路径用 EnvConfigSourceFile,不走这个变量。
 // 不设置时用 DefaultConfigSource。
 const (
-	EnvConfigSource = "CONFIG_SOURCE"
-	EnvConfigFile   = "CONFIG_FILE"
+	EnvConfigSource     = "CONFIG_SOURCE"
+	EnvConfigFile       = "CONFIG_FILE"
+	EnvConfigSourceFile = "CONFIG_SOURCE_FILE" // 本地 selector,type 必须是 config_center
 )
 
-// 配置中心(config-service)数据源。namespace 与 environment 没有默认值:
-// 猜错了不会报错,只会静默读到另一个环境的配置,比启动失败难查得多。
-const (
-	EnvConfigCenterAddr      = "CONFIG_CENTER_ADDR"      // config-service 地址,如 http://127.0.0.1:30010
-	EnvConfigCenterNamespace = "CONFIG_CENTER_NAMESPACE" // 命名空间,一般就是服务名
-	EnvConfigCenterEnv       = "CONFIG_CENTER_ENV"       // 环境,如 dev/pre/prod
-	EnvConfigCenterKey       = "CONFIG_CENTER_KEY"       // 配置键,如 bootstrap.yaml
-)
-
-// Consul
+// Consul(服务注册与发现,不再用于读 Bootstrap)
 const (
 	EnvConsulEnabled            = "CONSUL_ENABLED"
 	EnvConsulAddr               = "CONSUL_ADDR"
-	EnvConsulPath               = "CONSUL_PATH"
 	EnvConsulScheme             = "CONSUL_SCHEME"
 	EnvConsulToken              = "CONSUL_TOKEN"
 	EnvConsulInsecureSkipVerify = "CONSUL_INSECURE_SKIP_VERIFY"

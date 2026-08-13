@@ -15,6 +15,15 @@ spec:
       labels:
         app: example
     spec:
+      # +co:begin config-configcenter
+      # selector Secret 是 0400;fsGroup 让 UID/GID 1000 的非 root 进程可读。
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      # +co:end
       containers:
         - name: example
           image: example/example:dev
@@ -26,12 +35,14 @@ spec:
               value: "true"
             - name: CONSUL_ADDR
               value: "consul.example.com:8501"
-            - name: CONSUL_PATH
-              value: "org/example/prod.yml"
             - name: CONSUL_SCHEME
               value: "https"
             - name: CONSUL_INSECURE_SKIP_VERIFY
               value: "true"
+            # +co:begin config-configcenter
+            - name: CONFIG_SOURCE_FILE
+              value: "/etc/config-source/source.yaml"
+            # +co:end
           ports:
             - containerPort: 30002
               protocol: TCP
@@ -42,6 +53,12 @@ spec:
             limits:
               cpu: "1"
               memory: 512Mi
+          # +co:begin config-configcenter
+          volumeMounts:
+            - name: config-source
+              mountPath: /etc/config-source
+              readOnly: true
+          # +co:end
 #          envFrom:
 #            - configMapRef:
 #                name: example-config
@@ -57,5 +74,12 @@ spec:
 #              path: /healthz
 #              port: 30002
 
+      # +co:begin config-configcenter
+      volumes:
+        - name: config-source
+          secret:
+            # 创建同名 Secret,其中 source.yaml 是含机器 token 的 selector。
+            secretName: example-config-source
+            defaultMode: 0400
+      # +co:end
       restartPolicy: Always
-      

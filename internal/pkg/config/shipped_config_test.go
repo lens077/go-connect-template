@@ -20,6 +20,7 @@ import (
 func TestShippedConfigsDecode(t *testing.T) {
 	for _, name := range []string{"dev.yml", "pre.yml"} {
 		t.Run(name, func(t *testing.T) {
+			clearSourceEnv(t)
 			t.Setenv(constants.EnvConfigSource, constants.ConfigSourceFile)
 			t.Setenv(constants.EnvConfigFile, filepath.Join("..", "..", "..", "configs", name))
 

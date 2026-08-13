@@ -23,7 +23,7 @@ co new cart --module github.com/acme/shop --yes
 - **可观测性**: OpenTelemetry
 - **日志**: Zap
 - **参数校验**: protovalidate（`connectrpc.com/validate` 拦截器）
-- **配置**: 自带 `Source` 接口（file / Consul KV / 配置中心），YAML 解析用 Viper
+- **配置**: 自带 `Source` 接口（本地 file / Config Center SDK），YAML 解析用 Viper
 
 > 数据库目前只提供 PostgreSQL，mysql / sqlite 见 `TODO.md`。
 
@@ -36,10 +36,9 @@ co new cart --module github.com/acme/shop --yes
 │   └── scaffold/               # 生成新资源与 monorepo overlay 的模板
 ├── cmd/server/main.go          # 服务入口
 ├── api/                        # Protobuf API 定义
-│   ├── search/v1/              # 示例资源（co new 默认删掉，--keep-example 可留）
-│   └── config/v1/              # config-service 的契约副本，供配置中心数据源使用
+│   └── search/v1/              # 示例资源（co new 默认删掉，--keep-example 可留）
 ├── constants/                  # 常量与环境变量名
-├── configs/                    # dev.yml / pre.yml（值均为 example，勿提交真实凭据）
+├── configs/                    # dev.yml / pre.yml / source.dev.yaml.example（勿提交真实凭据）
 ├── deploy/                     # 部署配置 (Kubernetes)
 ├── infrastructure/             # 本地依赖的 compose（postgres / redis / consul）
 ├── internal/
@@ -54,7 +53,7 @@ co new cart --module github.com/acme/shop --yes
 │   │   ├── queries/            #   sqlc 查询
 │   │   └── models/             #   sqlc 生成物
 │   ├── pkg/                    # 工具包
-│   │   ├── config/             #   Source 接口 + file / consul / configcenter 三个实现
+│   │   ├── config/             #   Source 接口 + file / Config Center SDK
 │   │   ├── dbutil/             #   统一的数据库错误映射
 │   │   ├── env/                #   环境变量读取
 │   │   ├── log/                #   日志封装
@@ -110,7 +109,7 @@ docker compose -f infrastructure/elasticsearch/compose.yaml up -d
 > v9 客户端会发 `compatible-with=9` 的 Accept 头，8.x 服务端不认，连 Ping 都返回 400。
 
 Consul 的 compose 在 `infrastructure/consul/`，但 `make dev` 用不到它：配置从本地文件读，
-`CONSUL_ENABLED=false` 也不做服务注册。要验注册或 `make dev-consul` 时再起。
+`CONSUL_ENABLED=false` 也不做服务注册。要验注册时再起。
 
 ```bash
 # 默认走本地文件配置，不接配置中心
@@ -122,8 +121,10 @@ CONFIG_SOURCE=file \
 CONFIG_FILE=configs/dev.yml \
 go run cmd/server/main.go
 
-# 从 Consul KV 读整份配置
-make dev-consul
+# 经 selector 从 Config Center 拉 Bootstrap（首次使用）
+cp configs/source.dev.yaml.example configs/source.dev.yaml
+# 只在已被 gitignore 的 source.dev.yaml 里填 service_token
+make dev-cc
 ```
 
 ### 构建命令
@@ -147,7 +148,7 @@ make docker-build
 # 推送 Docker 镜像
 make docker-push
 
-# 部署到 Kubernetes
+# 部署到 Kubernetes（先创建 example-config-source Secret）
 make k8s-dev
 ```
 
@@ -156,19 +157,18 @@ make k8s-dev
 
 ## 配置说明
 
-整份 `Bootstrap` 配置从**一个**数据源取回，由 `CONFIG_SOURCE` 决定取哪个：
+整份 `Bootstrap` 配置从**一个**数据源取回。生产路径由 `CONFIG_SOURCE_FILE` 指向一份本地 selector，`type` 必须是 `config_center`；本地测试显式设 `CONFIG_SOURCE=file`。未设置时默认 `file`，保证克隆下来就能跑。
 
-| 取值 | 说明 | 需要的环境变量 |
+| 路径 | 说明 | 需要的环境变量 |
 |---|---|---|
-| `file`（默认） | 读本地 YAML，不接配置中心 | `CONFIG_FILE`（默认 `configs/dev.yml`） |
-| `consul` | 从 Consul KV 的某个 key 读整份 YAML | `CONSUL_ADDR`、`CONSUL_PATH`、`CONSUL_SCHEME` … |
-| `configcenter` | 从 config-service 按 namespace/environment/key 拉取 | `CONFIG_CENTER_ADDR`、`CONFIG_CENTER_NAMESPACE`、`CONFIG_CENTER_ENV`、`CONFIG_CENTER_KEY` |
+| `CONFIG_SOURCE_FILE`（生产） | Config Center SDK，selector 的 `type` 必须是 `config_center` | Secret 挂载的 selector 内含 address / namespace / environment / key / service_token |
+| `CONFIG_SOURCE=file`（默认） | 读本地 YAML，不接配置中心 | `CONFIG_FILE`（默认 `configs/dev.yml`） |
 
-刻意**不做**「主源失败自动降级到备源」：配置来源必须是确定的。静默降级会让服务拿着一份
-你以为早已废弃的配置正常跑起来，比直接启动失败难排查得多。
+`CONFIG_SOURCE=configcenter` 与 Consul KV 作为配置源均已退役：前者请改挂 selector 文件，后者 Consul 只保留服务注册/发现。
 
-新增数据源只需实现 `internal/pkg/config/source.go` 里的 `Source` 接口，再到 `NewSource` 加一个分支；
-每个实现放在自己的 `source_*.go` 里、自带环境变量解析与客户端构造，删掉其中一个另一个仍能独立编译。
+刻意**不做**「主源失败自动降级到备源」：配置来源必须是确定的。静默降级会让服务拿着一份你以为早已废弃的配置正常跑起来，比直接启动失败难排查得多。
+
+远端配置支持 Watch 热更新。`*Bootstrap` 是启动快照；需要随时读到最新值的消费者注入 `*Live`。`server` / `discovery` / `observability` 变更会打警告，需要滚动重启才生效。
 
 ### 环境变量
 
@@ -177,19 +177,16 @@ make k8s-dev
 | `SERVICE_NAME` | 服务名称 | org-service |
 | `SERVICE_VERSION` | 服务版本 | v1 |
 | `DEPLOYMENT_MODE` | 部署环境 | dev |
-| `CONFIG_SOURCE` | 配置数据源 | `file` |
+| `CONFIG_SOURCE_FILE` | Config Center selector 路径 | 无 |
+| `CONFIG_SOURCE` | 仅本地 `file`；`configcenter` 已废弃 | `file` |
 | `CONFIG_FILE` | `file` 源的路径 | `configs/dev.yml` |
-| `CONFIG_CENTER_ADDR` | config-service 地址 | 无 |
-| `CONFIG_CENTER_NAMESPACE` / `_ENV` / `_KEY` | 命名空间 / 环境 / 配置键 | **无默认值** |
 | `CONSUL_ENABLED` | 是否向 Consul 注册服务 | false |
-| `CONSUL_ADDR` | Consul 地址 | consul.example.com |
-| `CONSUL_PATH` | `consul` 源的配置 key | ecommerce/user/dev.yml |
+| `CONSUL_ADDR` | Consul 地址（只用于注册发现） | consul.example.com |
 
-> `CONFIG_CENTER_NAMESPACE` / `_ENV` 刻意不给默认值：猜错了不会报错，只会静默读到另一个环境的配置。
->
-> `CONSUL_ENABLED` 只管**服务注册**，与 `CONFIG_SOURCE=consul`（配置来源）是两件事。
+> `CONSUL_ENABLED` 只管**服务注册**，与配置来源无关。
 
-`configs/` 下的值全部是 example，真实凭据请走环境变量或配置中心，不要提交。
+`configs/source.dev.yaml.example` 只放占位值。真实 selector 用同目录下被忽略的
+`source.dev.yaml`，部署时通过 Secret 挂载；`service_token` 不得入库。
 
 ## API 端点
 

@@ -1,6 +1,6 @@
 # 默认值
 VERSION ?= dev
-GOIMAGE ?= golang:1.26.1-alpine3.22
+GOIMAGE ?= golang:1.26.5-alpine3.22
 GOOS ?= linux
 GOARCH ?= arm64
 CGOENABLED ?= 0
@@ -12,14 +12,15 @@ REPOSITORY = example/$(SERVICE)
 REGISTER = docker.io
 ARM64=linux/arm64
 AMD64=linux/amd64
+# 服务注册用的 Consul 地址(集群内域名)。配置不再走 Consul KV。
 CONSUL_ADDR=consul.example.com
 
 .PHONY: k8s-dev
 k8s-dev:
 	kubectl apply -f deploy
 
-# dev 默认走本地文件配置:克隆下来不装 Consul 也能直接起服务。
-# 需要跑 Consul 那套时用 make dev-consul。
+# dev 默认走本地文件配置:克隆下来不装配置中心也能直接起服务。
+# 需要连 Config Center 时用 make dev-cc。
 .PHONY: dev
 dev: dev-file
 
@@ -41,17 +42,17 @@ dev-file:
 	CONFIG_FILE=configs/dev.yml \
 	go run cmd/server/main.go
 
-# 从 Consul KV 读整份配置;CONSUL_PATH 指向存放 YAML 的 key
-.PHONY: dev-consul
-dev-consul:
+# +co:begin config-configcenter
+# 经 CONFIG_SOURCE_FILE 的 selector 从 Config Center 拉 Bootstrap。
+# 首次使用先复制 example,只在被忽略的 source.dev.yaml 里填机器 token:
+#   cp configs/source.dev.yaml.example configs/source.dev.yaml
+.PHONY: dev-cc
+dev-cc:
 	SERVICE_NAME=org-service-v1 \
 	CONSUL_ENABLED=true \
-	CONFIG_SOURCE=consul \
-	CONSUL_ADDR=$(CONSUL_ADDR) \
-	CONSUL_PATH=ecommerce/user/dev.yml \
-	CONSUL_SCHEME=https \
-	CONSUL_INSECURE_SKIP_VERIFY=true \
+	CONFIG_SOURCE_FILE=configs/source.dev.yaml \
 	go run cmd/server/main.go
+# +co:end
 
 .PHONY: test
 test:

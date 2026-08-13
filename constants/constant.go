@@ -44,7 +44,6 @@ const (
 // Consul configs default values
 const (
 	ConsulAddr               = "127.0.0.1:8500"
-	ConsulPath               = "/consul/"
 	ConsulScheme             = "http"
 	ConsulTlsScheme          = "https"
 	ConsulInsecureSkipVerify = false
@@ -57,16 +56,15 @@ const (
 	ConsulTagTtl = "ttl"
 )
 
-// 配置数据源:整份 Bootstrap 从哪儿拉,由 EnvConfigSource 决定,取值见下。
+// 配置数据源:整份 Bootstrap 从哪儿拉。
+// 生产路径走 CONFIG_SOURCE_FILE(selector);CONFIG_SOURCE 只保留本地 file 与已废弃的 configcenter。
 const (
-	ConfigSourceFile   = "file"   // 从本地 YAML 文件读,零外部依赖
-	ConfigSourceConsul = "consul" // 从 Consul KV 的 ConsulPath 读整份 Bootstrap
-	// ConfigSourceConfigCenter 从 config-service 按 namespace/environment/key 拉取,
-	// 走 api/config/v1 的 ConnectRPC 客户端。
+	ConfigSourceFile = "file" // 从本地 YAML 文件读,零外部依赖
+	// ConfigSourceConfigCenter 已废弃:改用 CONFIG_SOURCE_FILE 指向 type: config_center 的 selector。
 	ConfigSourceConfigCenter = "configcenter"
 
 	// DefaultConfigSource 默认读本地文件:克隆下来不配任何环境变量就能起服务。
-	// 生产部署显式设成 consul(或自建数据源),不依赖这个默认值。
+	// 生产部署用 CONFIG_SOURCE_FILE,不依赖这个默认值。
 	DefaultConfigSource = ConfigSourceFile
 
 	// ConfigFileFormat 各数据源存的都是 YAML 文本,解析时统一按此格式。
@@ -74,10 +72,4 @@ const (
 
 	// ConfigFilePath ConfigSourceFile 的默认路径,相对进程工作目录。
 	ConfigFilePath = "configs/dev.yml"
-)
-
-// ConfigSourceConfigCenter 的默认值。namespace/environment 不给默认值,见 EnvConfigCenterNamespace。
-const (
-	ConfigCenterAddr = "http://127.0.0.1:30010"
-	ConfigCenterKey  = "bootstrap.yaml"
 )

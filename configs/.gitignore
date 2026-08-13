@@ -5,6 +5,9 @@ local.yaml
 *.local.yml
 *.local.yaml
 
+# Config Center selector 含机器 token,只提交 .example 文件。
+source.dev.yaml
+
 # 证书/密钥不入库
 *.pem
 *.key

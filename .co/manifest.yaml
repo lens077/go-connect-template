@@ -163,8 +163,8 @@ features:
     # make dev 显式传 CONSUL_ENABLED=false,所以本地起不起都行
     dev_compose: infrastructure/consul/compose.yaml
 
-  # 配置数据源。file 是零依赖的本地 YAML,始终保留,保证「克隆下来就能跑」;
-  # consul 源与上面的 consul 注册中心共用同一个客户端库,故 needs 它。
+  # 配置数据源。file 是零依赖的本地 YAML,始终保留,保证「克隆下来就能跑」。
+  # 远端只走自研 Config Center SDK,Consul 只做服务注册/发现,不再读 KV 当 Bootstrap。
   config-file:
     title: 配置源 - 本地文件
     group: config-source
@@ -173,26 +173,21 @@ features:
     files:
       - internal/pkg/config/source_file.go
 
-  config-consul:
-    title: 配置源 - Consul KV
+  # 配置中心源走 github.com/lens077/config-center 的 SDK。
+  # 生产用 CONFIG_SOURCE_FILE 指向 type: config_center 的 selector;
+  # 契约 proto 由 SDK 携带,本服务不再复制 api/config。
+  config-configcenter:
+    title: 配置源 - 配置中心(config-center SDK)
     group: config-source
     default: true
-    needs: [consul]
     files:
-      - internal/pkg/config/source_consul.go
-
-  # 配置中心源要求同仓库跑着 config-service,所以只有 monorepo 布局强制启用它
-  # (见 layouts.monorepo.features)。独立仓库也可以显式选,但得自己保证
-  # CONFIG_CENTER_ADDR 指得到一个真实的 config-service。
-  #
-  # api/config 是 config-service 的契约副本,只服务于这个数据源,故随它一起裁剪。
-  # 它不是本服务自己的 API,monorepo 下由 shared_proto 保证多个服务共用同一份。
-  config-configcenter:
-    title: 配置源 - 配置中心(config-service)
-    group: config-source
-    files:
-      - internal/pkg/config/source_configcenter.go
-      - api/config
+      - internal/pkg/config/source_sdk.go
+      - internal/pkg/config/source_sdk_test.go
+      - internal/pkg/config/source_configcenter_watch_test.go
+      - internal/pkg/config/config_sdk_test.go
+      - configs/source.dev.yaml.example
+    requires:
+      - github.com/lens077/config-center
 
 groups:
   database:
@@ -233,7 +228,7 @@ groups:
     title: 配置数据源
     order: 70
     exclusive: false
-    members: [config-file, config-consul, config-configcenter]
+    members: [config-file, config-configcenter]
 
 # ---------------------------------------------------------------------------
 # 布局
@@ -275,15 +270,11 @@ layouts:
       - third_party
       - okteto.yaml
       - .stignore
-    # 配置中心源在 monorepo 里是默认设施:config-service 就跑在同一个仓库里。
-    # 实现本体在模板里(internal/pkg/config/source_configcenter.go),
+    # 配置中心源在 monorepo 里是默认设施:config-center 就跑在同一个仓库里。
+    # 实现本体在模板里(internal/pkg/config/source_sdk.go),
     # 不在这儿的 overlay 下 —— 放模板里才会被模板自己的 CI 编译到。
     features:
       - config-configcenter
-    # api/config 是 config-service 的契约,整个 monorepo 共用一份。
-    # 生成第二个服务时它已经在 backend/api/config 了,保留仓库里那份。
-    shared_proto:
-      - config
     # overlay 目录的结构就是目标路径:渲染后去掉 .tmpl 后缀,
     # 按同样的相对路径写进 service_dir,覆盖同名文件。
     #   scaffold/monorepo/Makefile.tmpl -> backend/services/<name>/Makefile

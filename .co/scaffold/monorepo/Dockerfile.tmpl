@@ -3,7 +3,7 @@
 # 只把服务目录当上下文就 COPY 不到公共包。
 # 配套的 make docker-build 里那句 cd ../.. 就是为此。
 
-ARG GOIMAGE=golang:1.26.1-alpine3.22
+ARG GOIMAGE=golang:1.26.5-alpine3.22
 FROM --platform=$BUILDPLATFORM ${GOIMAGE} AS compile
 
 ARG TARGETOS=linux
@@ -50,7 +50,7 @@ COPY --from=compile --chown=appuser:appuser /app/service /app/
 
 USER appuser
 
-# 默认从配置中心读;要改回本地文件就覆盖成 CONFIG_SOURCE=file + CONFIG_FILE
-ENV CONFIG_SOURCE=configcenter
+# 生产由编排注入 CONFIG_SOURCE_FILE 指向 selector。
+# 本地覆盖可改成 CONFIG_SOURCE=file + CONFIG_FILE。
 
 ENTRYPOINT ["/app/service"]

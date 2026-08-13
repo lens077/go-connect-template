@@ -5,7 +5,7 @@
 # 在服务目录里跑会报「path is outside context directory」。
 
 VERSION ?= dev
-GOIMAGE ?= golang:1.26.1-alpine3.22
+GOIMAGE ?= golang:1.26.5-alpine3.22
 GOOS ?= linux
 GOARCH ?= arm64
 CGOENABLED ?= 0
@@ -19,22 +19,18 @@ REGISTER ?= {{.DockerRegistry}}
 ARM64 = linux/arm64
 AMD64 = linux/amd64
 
-# 服务注册用的 Consul(集群内域名)
+# 服务注册用的 Consul(集群内域名)。配置不再走 Consul KV。
 CONSUL_ADDR ?= {{.ConsulAddr}}
-# 读配置用的 Consul。与上面分开:集群内域名从宿主机通常不通,
-# 本地开发要指到一个能直连的地址
-CONSUL_KV_ADDR ?= 127.0.0.1:8500
 
 .PHONY: k8s-dev
 k8s-dev:
 	kubectl apply -f deploy
 
-# 配置数据源三选一,由 CONFIG_SOURCE 决定;三种情况下 Consul 都照常做服务注册/发现。
+# 配置数据源二选一。Consul 只做服务注册/发现,与配置来源无关。
 #   make dev      -> 本地 YAML,不接配置中心
-#   make dev-kv   -> Consul KV
-#   make dev-cc   -> 配置中心 config-service
+#   make dev-cc   -> CONFIG_SOURCE_FILE 指向 Config Center selector
 #
-# 三种都只是「配置从哪来」,跟外部组件无关:postgres / redis 是启动硬依赖,
+# 两种都只是「配置从哪来」,跟外部组件无关:postgres / redis 是启动硬依赖,
 # 跑之前先在仓库根按 infrastructure/<组件>/compose.yaml 起好。
 
 .PHONY: dev
@@ -45,26 +41,16 @@ dev:
 	CONFIG_FILE=configs/dev.yml \
 	go run cmd/server/main.go
 
-.PHONY: dev-kv
-dev-kv:
-	SERVICE_NAME="{{.ServiceName}}" \
-	CONSUL_ENABLED=true \
-	CONFIG_SOURCE=consul \
-	CONSUL_ADDR=$(CONSUL_KV_ADDR) \
-	CONSUL_PATH={{.ConsulKVPrefix}}/{{.Name}}/dev.yml \
-	CONSUL_SCHEME=http \
-	go run cmd/server/main.go
-
+# +co:begin config-configcenter
 .PHONY: dev-cc
+# 首次使用先复制 example,只在被忽略的 source.dev.yaml 里填机器 token:
+#   cp configs/source.dev.yaml.example configs/source.dev.yaml
 dev-cc:
 	SERVICE_NAME="{{.ServiceName}}" \
 	CONSUL_ENABLED=true \
-	CONFIG_SOURCE=configcenter \
-	CONFIG_CENTER_ADDR=http://127.0.0.1:30010 \
-	CONFIG_CENTER_NAMESPACE={{.Name}} \
-	CONFIG_CENTER_ENV=dev \
-	CONFIG_CENTER_KEY=bootstrap.yaml \
+	CONFIG_SOURCE_FILE=configs/source.dev.yaml \
 	go run cmd/server/main.go
+# +co:end
 
 .PHONY: test
 test:

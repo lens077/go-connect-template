@@ -14,8 +14,8 @@ var _ Source = (*fileSource)(nil)
 
 // fileSource 从本地 YAML 文件读整份 Bootstrap。
 //
-// 存在的意义是「零依赖启动」:克隆下来 go run 就能跑,不需要先架一套 Consul。
-// 本地开发和单机部署用它;多实例部署应换成 consul 等集中式数据源,
+// 存在的意义是「零依赖启动」:克隆下来 go run 就能跑,不需要先架配置中心。
+// 本地开发和单机部署用它;多实例部署应换成 CONFIG_SOURCE_FILE 指向 Config Center,
 // 否则每台机器上的配置各改各的,漂移了也无从发现。
 type fileSource struct {
 	path string
