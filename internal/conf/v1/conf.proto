@@ -4,6 +4,7 @@ package conf.v1;
 
 import "third_party/validate/validate.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/lens077/go-connect-template/internal/conf/v1;confv1";
 
@@ -68,9 +69,9 @@ message Log {
 
 message Server {
   string addr = 1 [
-    (buf.validate.field).string.address = true,
-    (buf.validate.field).string.example = "0.0.0.0",
-    (buf.validate.field).string.example = "localhost"
+    (buf.validate.field).string.host_and_port = true,
+    (buf.validate.field).string.example = "0.0.0.0:30001",
+    (buf.validate.field).string.example = "localhost:8000"
   ];
   HTTP http = 2;
   Cors cors = 3;
@@ -90,8 +91,8 @@ message Server {
   }
   message Cors {
     repeated string allowed_origins = 1 [
-      (buf.validate.field).string.host_and_port = true,
-      (buf.validate.field).string.example = "http://localhost:3000"
+      (buf.validate.field).repeated.items.string.uri = true,
+      (buf.validate.field).repeated.items.string.example = "http://localhost:3000"
     ];
   }
 }
@@ -99,14 +100,13 @@ message Server {
 message Data {
   message Database {
     Postgres postgres = 1;
-
     message Postgres {
       string host = 1 [
         (buf.validate.field).string.address = true,
         (buf.validate.field).string.example = "localhost"
       ];
       uint32 port = 2 [
-        (buf.validate.field).int32.example = 5432
+        (buf.validate.field).uint32.example = 5432
       ];
       string user = 3 [
         (buf.validate.field).string.example = "postgres"
@@ -125,10 +125,10 @@ message Data {
       Tls tls = 9;
 
       message DatabasePool {
-        uint32 max_conns = 1 [(buf.validate.field).int32 = {
+        uint32 max_conns = 1 [(buf.validate.field).uint32 = {
           gte: 1
         }];
-        uint32 min_conns = 2 [(buf.validate.field).int32 = {
+        uint32 min_conns = 2 [(buf.validate.field).uint32 = {
           gte: 1
         }];
         google.protobuf.Duration max_conn_lifetime = 3 [(buf.validate.field).duration.gte = {seconds: 1}];
@@ -153,7 +153,7 @@ message Data {
     message Redis {
       string host = 1 [(buf.validate.field).string.address = true];
       uint32 port = 2 [
-        (buf.validate.field).int32.example = 5432
+        (buf.validate.field).uint32.example = 5432
       ];
       string username = 3 [
         (buf.validate.field).string.example = "default"
@@ -166,7 +166,7 @@ message Data {
       google.protobuf.Duration read_timeout = 7 [(buf.validate.field).duration.gte = {seconds: 1}];
       google.protobuf.Duration write_timeout = 8 [(buf.validate.field).duration.gte = {seconds: 1}];
       uint32 pool_size = 9;
-      uint32 min_idle_conns = 10 [(buf.validate.field).int32 = {
+      uint32 min_idle_conns = 10 [(buf.validate.field).uint32 = {
         gte: 1
       }];
       Tls tls = 11;
@@ -186,13 +186,21 @@ message Data {
 message Auth {
   Casdoor casdoor = 1;
   message Casdoor {
-    string endpoint = 1 [(buf.validate.field).string.host_and_port = true];
+    string endpoint = 1 [(buf.validate.field).string.uri = true];
     string client_id = 2;
     string client_secret = 3;
     string organization_name = 4;
     string application_name = 5;
     string certificate = 6;
   }
+}
+
+message Store {
+  message Minio {
+    string default_domain = 1;
+    map<string, string> buckets = 2; // 匹配key,用于查找该 bucket 是否有专属的独立域名/路径
+  }
+  Minio minio = 1;
 }
 
 message Observability {
@@ -207,6 +215,12 @@ message Observability {
       (buf.validate.field).string.example = "localhost:4318"
     ];
     Tls tls = 2;
+    // 采样率 [0.0, 1.0]。1.0 = 全采,0.0 = 全不采。
+    // 用 wrapper 而不是裸 double:proto3 裸 double 的零值就是 0.0,和「没配置」
+    // 无法区分 —— 那样所有存量配置(都还没有这个字段)升级后会被解析成 0.0,
+    // 等于一条 trace 都不采,而且不报任何错。wrapper 让「没配」是 null,
+    // 由代码回落到 1.0,与升级前的 AlwaysSample 行为一致。
+    google.protobuf.DoubleValue sample_ratio = 3;
   }
   message Metric {
     string endpoint = 1 [
@@ -214,6 +228,9 @@ message Observability {
       (buf.validate.field).string.example = "localhost:4318"
     ];
     Tls tls = 2;
+    // 指标导出间隔。不配置回落到 30s。
+    // (OTel SDK 默认 60s;这里取 30s,原来硬编码的 3s 对 collector 压力过大)
+    google.protobuf.Duration export_interval = 3;
   }
   message Logging {
     string endpoint = 1 [
@@ -232,8 +249,9 @@ message Observability {
 message Discovery {
   message Consul {
     string addr = 1 [
-      (buf.validate.field).string.host_and_port = true,
-      (buf.validate.field).string.example = "localhost:4317"
+      (buf.validate.field).string.pattern = "^[A-Za-z0-9.-]+(:[0-9]{1,5})?$",
+      (buf.validate.field).string.example = "consul.dev.test",
+      (buf.validate.field).string.example = "consul-expose-servers.consul.svc:8500"
     ];
     string scheme = 2;
     bool health_check = 3;
@@ -262,8 +280,8 @@ message Discovery {
 message Search {
   message ElasticSearch {
     repeated string addresses = 1 [
-      (buf.validate.field).string.host_and_port = true,
-      (buf.validate.field).string.example = "http://es.example.com:9200"
+      (buf.validate.field).repeated.items.string.uri = true,
+      (buf.validate.field).repeated.items.string.example = "http://es.example.com:9200"
     ];
     string username = 2 [
       (buf.validate.field).string.example = "elastic"
@@ -277,16 +295,4 @@ message Search {
     }
   }
   ElasticSearch elastic_search = 1;
-}
-// Store 对象存储。只配「对外访问域名」,不配 AK/SK ——
-// 上传走各服务自己的 SDK 凭据,这里只负责把存储 key 拼成可访问的 URL。
-message Store {
-  message Minio {
-    string default_domain = 1 [
-      (buf.validate.field).string.example = "https://minio.example.com"
-    ];
-    // buckets 按 bucket 名覆盖 default_domain,用于某些 bucket 挂在独立 CDN 域名上的情况
-    map<string, string> buckets = 2;
-  }
-  Minio minio = 1;
 }

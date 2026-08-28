@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"buf.build/go/protovalidate"
 	"github.com/lens077/go-connect-template/constants"
 	confv1 "github.com/lens077/go-connect-template/internal/conf/v1"
 	"github.com/mitchellh/mapstructure"
@@ -78,6 +79,9 @@ func decodeConfig(data map[string]any, target any) error {
 
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName: "json",
+		// 未知键直接报错:键名打错的后果是功能被静默关掉,比启动失败难查得多。
+		// 要加新键,先发能识别它的代码,再改配置。
+		ErrorUnused: true,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			stringToProtoDurationHook,
 		),
@@ -89,11 +93,18 @@ func decodeConfig(data map[string]any, target any) error {
 	return decoder.Decode(v.AllSettings())
 }
 
+// validateBootstrap 执行 conf.proto 里声明的 buf.validate 约束(required/枚举/格式)。
+// 解码只保证形状:不校验的话 required=true 形同虚设,缺块会被 getter 的 nil-safe
+// 吞掉,功能静默失能而不是启动失败(.service-matrix.yaml config_validation)。
+func validateBootstrap(conf *confv1.Bootstrap) error {
+	return protovalidate.Validate(conf)
+}
+
 // Init 拉取并解析整份 Bootstrap 配置。
 //
-// 「从哪儿拉」由 NewSource 决定(见 source.go),本函数只负责加载、解码和发布,
-// 不感知远端细节;其余全部配置(含 Consul 服务发现地址、DB、Redis 等)
-// 一律由选中的数据源下发。
+// 正常启动由 CONFIG_SOURCE_FILE 指向 Config Center selector（见 source.go）。本函数
+// 只负责加载、解码和发布，不感知远端细节；其余全部配置
+// (含 Consul 服务发现地址、DB、Redis 等)一律由选中的数据源下发。
 func Init(ctx context.Context) (*confv1.Bootstrap, error) {
 	src, err := NewSource()
 	if err != nil {
@@ -108,6 +119,9 @@ func Init(ctx context.Context) (*confv1.Bootstrap, error) {
 	localConf := &confv1.Bootstrap{}
 	if err := decodeConfig(rawConfig, localConf); err != nil {
 		return nil, fmt.Errorf("decode bootstrap from %s: %w", src.Name(), err)
+	}
+	if err := validateBootstrap(localConf); err != nil {
+		return nil, fmt.Errorf("validate bootstrap from %s: %w", src.Name(), err)
 	}
 
 	srcMu.Lock()
@@ -139,7 +153,7 @@ func currentSource() Source {
 
 // startWatch 在数据源支持变更推送时订阅热更新。
 //
-// 不支持推送的数据源(本地文件)保持「启动读一次」的语义,只打一行日志说明,
+// 不支持推送的数据源(consul)保持「启动读一次」的语义,只打一行日志说明,
 // 免得运维以为改了配置就会生效。
 func startWatch(lc fx.Lifecycle, logger *zap.Logger, live *Live) {
 	log := logger.Named("configWatch")
@@ -170,6 +184,10 @@ func startWatch(lc fx.Lifecycle, logger *zap.Logger, live *Live) {
 						if err := decodeConfig(ev.Raw, cur); err != nil {
 							// 一份写错的配置不能把在跑的服务带塌
 							log.Error("热更新配置解码失败,保留当前配置", zap.Error(err))
+							return
+						}
+						if err := validateBootstrap(cur); err != nil {
+							log.Error("热更新配置未通过 conf.proto 校验,保留当前配置", zap.Error(err))
 							return
 						}
 						live.Set(cur)

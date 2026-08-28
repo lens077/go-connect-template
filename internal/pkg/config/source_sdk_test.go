@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	configv1 "github.com/lens077/config-center/api/config/v1"
-	"github.com/lens077/config-center/api/config/v1/configv1connect"
+	configv1 "github.com/lens077/control-tower/api/config/v1"
+	"github.com/lens077/control-tower/api/config/v1/configv1connect"
 	"github.com/lens077/go-connect-template/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,13 +23,17 @@ import (
 type fakeConfigService struct {
 	configv1connect.UnimplementedConfigServiceHandler
 
+	// entries 以 "namespace/environment/key" 为索引,构造后只读
 	entries map[string]*configv1.ConfigEntry
 
-	mu         sync.Mutex
+	// httptest 每个连接一个 goroutine,并发用例下 handler 会同时写断言字段,故加锁
+	mu sync.Mutex
+	// lastReq 记录最后一次请求,用于断言三元组被正确传递
 	lastReq    *configv1.GetKeyRequest
 	lastHeader http.Header
 }
 
+// LastReq 返回最后一次收到的 GetKey 请求
 func (f *fakeConfigService) LastReq() *configv1.GetKeyRequest {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -71,6 +75,7 @@ func startFakeConfigService(t *testing.T, entries map[string]*configv1.ConfigEnt
 	return svc, server.URL
 }
 
+// useConfigCenterSource 把 SDK selector 指向桩服务,返回构造好的数据源。
 func useConfigCenterSource(t *testing.T, addr, namespace, environment, key string) Source {
 	t.Helper()
 	selector := filepath.Join(t.TempDir(), "source.yaml")
@@ -108,6 +113,7 @@ func TestConfigCenterSource_Load(t *testing.T) {
 	server := got["server"].(map[string]any)
 	assert.Equal(t, "0.0.0.0:30006", server["addr"])
 
+	// 三元组必须原样传给服务端,否则会静默读到别的环境的配置
 	last := svc.LastReq()
 	require.NotNil(t, last)
 	assert.Equal(t, "cart", last.GetNamespace())
@@ -123,10 +129,12 @@ func TestConfigCenterSource_LoadNotFound(t *testing.T) {
 	_, err := src.Load(context.Background())
 	require.Error(t, err)
 
+	// 报错要带齐 namespace/environment/key,便于一眼看出取的是哪一份
 	assert.Contains(t, err.Error(), "cart/prod/bootstrap.yaml")
 	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
 
+// 配置项存在但值为空,和不存在一样是致命的:让服务带着空 Bootstrap 起来更难查
 func TestConfigCenterSource_LoadEmptyValue(t *testing.T) {
 	_, addr := startFakeConfigService(t, map[string]*configv1.ConfigEntry{
 		"cart/dev/bootstrap.yaml": {Value: ""},
@@ -168,37 +176,4 @@ func TestConfigCenterSource_LoadRespectsContext(t *testing.T) {
 	_, err := src.Load(ctx)
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeCanceled, connect.CodeOf(err))
-}
-
-func TestNewSource_DeprecatedConfigCenterEnvFailsFast(t *testing.T) {
-	clearSourceEnv(t)
-	t.Setenv(constants.EnvConfigSource, constants.ConfigSourceConfigCenter)
-
-	src, err := NewSource()
-	assert.Nil(t, src)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), constants.EnvConfigSourceFile)
-}
-
-func TestNewSource_SDKSelector(t *testing.T) {
-	clearSourceEnv(t)
-	selector := filepath.Join(t.TempDir(), "source.yaml")
-	require.NoError(t, os.WriteFile(selector, []byte("type: config_center\nconfig_center:\n  address: http://config-center:30010\n  namespace: cart\n  environment: pre\n  key: bootstrap.yaml\n"), 0o600))
-	t.Setenv(constants.EnvConfigSourceFile, selector)
-
-	src, err := NewSource()
-	require.NoError(t, err)
-	assert.Equal(t, "config_center", src.Name())
-}
-
-func TestNewSource_SDKSelectorRejectsFile(t *testing.T) {
-	clearSourceEnv(t)
-	selector := filepath.Join(t.TempDir(), "source.yaml")
-	require.NoError(t, os.WriteFile(selector, []byte("type: file\nfile:\n  path: bootstrap.yaml\n"), 0o600))
-	t.Setenv(constants.EnvConfigSourceFile, selector)
-
-	src, err := NewSource()
-	assert.Nil(t, src)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "must select config_center")
 }

@@ -2,7 +2,7 @@
 
 一个基于 Go Connect 框架的微服务模板，用于快速构建现代化的云原生应用。
 
-本仓库同时是 [`co-cli`](https://github.com/lens077/co-cli) 的模板源：它**始终保持所有能力都打开且
+本仓库同时是 [`co-cli`](https://github.com/lens077/go-connect-template-cli) 的模板源：它**始终保持所有能力都打开且
 `go build ./...` 通过**的状态，`co` 只按 `.co/manifest.yaml` 做减法（删文件、删 `+co:` 标记行、
 删 `go.mod` 依赖）。所以这里编译得过，裁剪出来的服务就编译得过。
 
@@ -49,7 +49,7 @@ co new cart --module github.com/acme/shop --yes
 │   │   ├── cache_redis.go      #   Redis
 │   │   ├── search_elasticsearch.go
 │   │   ├── auth_casdoor.go
-│   │   ├── schema/             #   建表 DDL，000N_ 前缀决定 sqlc 的读取顺序
+│   │   ├── migrations/             #   建表 DDL，000NN_ 前缀决定 sqlc 的读取顺序
 │   │   ├── queries/            #   sqlc 查询
 │   │   └── models/             #   sqlc 生成物
 │   ├── pkg/                    # 工具包
@@ -80,7 +80,7 @@ co new cart --module github.com/acme/shop --yes
 - ✅ **多数据源**: PostgreSQL + Redis + Elasticsearch
 - ✅ **服务发现**: Consul 集成，支持健康检查和自动注销
 - ✅ **可观测性**: 完整的 OTel 追踪、指标和日志支持
-- ✅ **配置管理**: 可插拔数据源，本地文件 / Consul KV / 配置中心三选一
+- ✅ **配置管理**: 可插拔数据源，本地文件 / 本地文件 / Config Center selector
 - ✅ **健康检查**: 数据库、缓存、ES 的健康检查端点
 - ✅ **参数校验**: protobuf 里声明约束，拦截器统一拒绝非法请求
 - ✅ **中间件**: 请求日志、CORS、错误处理
@@ -101,9 +101,8 @@ docker compose -f infrastructure/redis/compose.yaml up -d
 docker compose -f infrastructure/elasticsearch/compose.yaml up -d
 ```
 
-建表不用手动跑：`internal/data/schema/` 挂进了 postgres 镜像的 `docker-entrypoint-initdb.d`，
-库第一次初始化时按 `000N_` 的顺序自动执行。**只在第一次生效** —— 后面 `co resource add`
-加了新表，`down -v` 连数据卷一起删掉重来即可。
+迁移使用 goose 版本文件，存放在 `internal/data/migrations/`；示例种子存放在
+`internal/data/seeds/`。生产服务必须通过迁移命令升级，不能依赖容器首次启动脚本。
 
 > ES 镜像的大版本必须跟 `go.mod` 里的客户端对齐（现在是 `go-elasticsearch/v9` → ES 9.x）。
 > v9 客户端会发 `compatible-with=9` 的 Accept 头，8.x 服务端不认，连 Ping 都返回 400。
@@ -235,7 +234,7 @@ make k8s-dev
 - **verify-ca**: 验证 CA 证书
 - **verify-full**: 验证 CA 证书和域名
 
-`internal/data/schema/` 下的建表 DDL **文件名带 `000N_` 前缀**：sqlc 按文件名排序读整个目录，
+`internal/data/migrations/` 下的建表 DDL **文件名带 `000NN_` 前缀**：sqlc 按文件名排序读整个目录，
 序号就是建表顺序，后建的表引用先建的表时靠它保证外键建得起来。`co resource add` 会自动接着往下排。
 
 ## 作为模板库维护

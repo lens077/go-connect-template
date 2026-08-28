@@ -1,6 +1,6 @@
 version: "2"
 sql:
-  - schema: "internal/data/schema"
+  - schema: "internal/data/migrations"
     queries: "internal/data/queries"
     engine: "postgresql"
     database:
@@ -12,7 +12,7 @@ sql:
       uri: "postgresql://postgres:REPLACE_ME@127.0.0.1:5432/postgres?sslmode=require&sslrootcert=./pg_ca_pem.crt&timezone=Asia/Shanghai"
     analyzer:
       # 关掉数据库分析器:开着的话每次 sqlc generate 都要连上面那个库,
-      # 没起数据库时 make sqlc 会直接失败。内置的 postgres 解析器靠 schema/
+      # 没起数据库时 make sqlc 会直接失败。内置的 postgres 解析器靠 migrations/
       # 目录就能推断类型,离线够用。
       #
       # 想让 sqlc 用真实库校验查询(能查出内置解析器漏掉的类型错误)时,

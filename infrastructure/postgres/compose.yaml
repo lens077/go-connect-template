@@ -1,10 +1,7 @@
 # 本地开发用的 PostgreSQL。用户名/密码/库名与 configs/dev.yml 里的
 # data.database 一致,起来就能直接 make dev。
 #
-# internal/data/schema/ 下的建表 DDL 会在**第一次**初始化时自动执行
-# (见下面 initdb.d 的挂载)。之后新增的 schema 不会再跑 —— 加了新资源就:
-#   docker compose -f infrastructure/postgres/compose.yaml down -v && ... up -d
-# 数据卷一起删掉重来。本地开发的库本来就该随时能扔。
+# 本文件只启动数据库。表结构由 goose 迁移管理，避免本地首次初始化脚本与生产升级路径分叉。
 name: dev-postgres
 
 services:
@@ -25,10 +22,6 @@ services:
       # 还是按 17 那样挂 .../data 的话容器直接退出,报 "there appears to be
       # PostgreSQL data in /var/lib/postgresql/data (unused mount/volume)"
       - data:/var/lib/postgresql
-      # 官方镜像在库初始化完之后按文件名顺序跑 /docker-entrypoint-initdb.d 下的
-      # *.sql —— schema 文件的 000N_ 前缀就是为这个顺序准备的,建表顺序即外键顺序。
-      # 只读挂载:这个目录只该被读,不该被容器写回仓库。
-      - ../../internal/data/schema:/docker-entrypoint-initdb.d:ro
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

@@ -9,8 +9,8 @@ import (
 
 // Live 持有「当前」这一份配置,支持整体原子替换。
 //
-// 用 atomic.Pointer 而不是 RWMutex:Get 落在每个请求的热路径上,
-// 而写只在配置变更时发生。
+// 用 atomic.Pointer 而不是 RWMutex:Get 落在每个请求的热路径上
+// (见 internal/data/cart.go 拼缩略图 URL 的地方),而写只在配置变更时发生。
 //
 // 整体替换而不是逐字段改:配置是一个整体,半新半旧的中间态没有任何调用方能正确处理。
 type Live struct {

@@ -7,20 +7,14 @@ import (
 	confv1 "github.com/lens077/go-connect-template/internal/conf/v1"
 )
 
-// FormatObjectURL 把库里存的相对 Key 拼成可直接访问的绝对 URL。
-//
-// 库里只存 Key(如 "avatar/2024/x.png"),域名放配置:换 CDN、换 bucket 域名
-// 时改一处配置即可,不用刷全表。任何一步拼不出来都返回原始 relativeKey,
-// 而不是空串 —— 宁可前端拿到一个相对路径自己接域名,也不要整个字段消失。
+// FormatObjectURL 将相对 Key 转换为带有正确域名的绝对 URL
 func FormatObjectURL(bucket, relativeKey string, cfg *confv1.Store) string {
 	if relativeKey == "" {
 		return ""
 	}
 
-	// 已经是绝对地址(含协议相对的 //host/path)的直接放行,便于存量数据混用
-	if strings.HasPrefix(relativeKey, "http://") ||
-		strings.HasPrefix(relativeKey, "https://") ||
-		strings.HasPrefix(relativeKey, "//") {
+	// 1. 绝对路径或 schema 开头直接返回
+	if strings.HasPrefix(relativeKey, "http://") || strings.HasPrefix(relativeKey, "https://") || strings.HasPrefix(relativeKey, "//") {
 		return relativeKey
 	}
 
@@ -28,21 +22,21 @@ func FormatObjectURL(bucket, relativeKey string, cfg *confv1.Store) string {
 		return relativeKey
 	}
 
-	// 带斜杠精准切前缀:直接 TrimPrefix(key, bucket) 会把 "banner_v2/x.png"
-	// 在 bucket="banner" 时误切成 "_v2/x.png"
+	// 2. 核心修复：带斜杠精准匹配切除桶前缀，避免误伤（如 ecommerce_banner）
+	bucketPrefix := bucket + "/"
 	imgURL := relativeKey
-	if after, ok := strings.CutPrefix(relativeKey, bucket+"/"); ok {
+	if after, ok := strings.CutPrefix(relativeKey, bucketPrefix); ok {
 		imgURL = after
 	}
 
 	var baseURL string
 
-	// 优先用该 bucket 的专属域名(独立 CDN 的场景)
+	// 3. 查找该 bucket 是否有专属域名
 	if cfg.Minio.Buckets != nil {
 		baseURL = cfg.Minio.Buckets[bucket]
 	}
 
-	// 没配专属域名就退回 default_domain + bucket
+	// 4. 降级逻辑：若没有专属域名，使用 DefaultDomain + bucket 拼接
 	if baseURL == "" {
 		if cfg.Minio.DefaultDomain == "" {
 			return relativeKey
@@ -51,13 +45,15 @@ func FormatObjectURL(bucket, relativeKey string, cfg *confv1.Store) string {
 		var err error
 		baseURL, err = url.JoinPath(cfg.Minio.DefaultDomain, bucket)
 		if err != nil {
-			// default_domain 写得不规范导致 JoinPath 失败时手工拼,别丢域名
+			// 如果 DefaultDomain 配置不规范导致 JoinPath 报错，采用安全的手动拼接降级
 			baseURL = strings.TrimSuffix(cfg.Minio.DefaultDomain, "/") + "/" + bucket
 		}
 	}
 
+	// 5. 拼接完整 URL
 	fullURL, err := url.JoinPath(baseURL, imgURL)
 	if err != nil {
+		// 容错降级：如果 baseURL 依然解析失败，手动兜底拼接，而不是直接丢弃域名
 		return strings.TrimSuffix(baseURL, "/") + "/" + strings.TrimPrefix(imgURL, "/")
 	}
 

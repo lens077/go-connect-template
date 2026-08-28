@@ -3,6 +3,7 @@
 --
 -- 文件名的 000N_ 前缀决定读取顺序,与迁移工具的命名保持一致。
 
+-- +goose Up
 CREATE TABLE IF NOT EXISTS {{.Table}}
 (
     id             BIGSERIAL PRIMARY KEY,
@@ -32,3 +33,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS {{.Table}}_code_key
 -- 覆盖 ListXxx 的过滤 + 排序:(status, created_at DESC) 让 keyset 分页走索引扫描
 CREATE INDEX IF NOT EXISTS {{.Table}}_status_created_at_idx
     ON {{.Table}} (status, created_at DESC) WHERE deleted_at IS NULL;
+
+-- +goose Down
+DROP TABLE IF EXISTS {{.Table}};

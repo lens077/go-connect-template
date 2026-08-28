@@ -4,7 +4,7 @@
 每一步之后 `go build ./...` 与 `go vet ./...` 都必须通过。
 
 裁剪逻辑全部外置到 `.co/`(以 `.` 开头,Go 工具链整个忽略),模板本体始终是一份
-「所有 feature 都打开且能编译」的参考实现。CLI 侧的改动见 `../co-cli/TODO.md`。
+「所有 feature 都打开且能编译」的参考实现。CLI 侧的改动见 `../go-connect-template-cli/TODO.md`。
 
 数据库本轮只做 PostgreSQL,mysql / sqlite 按要求延后。
 
@@ -39,8 +39,8 @@
 
 ### 4. sqlc 全链路
 
-- [x] 新增 `internal/data/schema/`(`0001_products.sql`)、`internal/data/queries/`、`internal/data/models/`
-- [x] `sqlc.yaml`:`analyzer.database: false`,离线靠 `schema/` 推断类型,没起数据库时 `make sqlc` 也能跑
+- [x] 新增 `internal/data/migrations/`(`00001_products.sql`)、`internal/data/queries/`、`internal/data/models/`
+- [x] `sqlc.yaml`:`analyzer.database: false`,离线靠 `migrations/` 推断类型,没起数据库时 `make sqlc` 也能跑
 
 ### 5. 配置文件与构建脚本
 
@@ -77,7 +77,7 @@
 
 - [x] 删除 `source_consul.go` 与 `CONFIG_SOURCE=consul` / `CONSUL_PATH`。Consul 只保留服务注册/发现
 - [x] 删除手写 `source_configcenter.go` 与复制的 `api/config/`
-- [x] 新增 `source_sdk.go`：经 `github.com/lens077/config-center/sdk/configsource` 读 selector，`type` 必须是 `config_center`
+- [x] 新增 `source_sdk.go`：经 `github.com/lens077/control-tower/sdk/configsource` 读 selector，`type` 必须是 `config_center`
 - [x] 新增 `live.go` + `startWatch`：Config Center 支持热更新；file 源仍是启动读一次
 - [x] `CONFIG_SOURCE=configcenter` 快速失败，提示改用 `CONFIG_SOURCE_FILE`
 - [x] `make dev-cc` 改挂被忽略的 `configs/source.dev.yaml`;仓库只留 `.example`,避免机器 token 入库
@@ -115,3 +115,10 @@
 
 - [ ] `internal/pkg/dbutil/status.go` 没有搬过来(cart 里那份耦合了它自己的领域枚举,通用形态要重新设计)
 - [ ] `Makefile` 没有 `k8s-prod` 目标(只有 `k8s-dev`)
+
+### 12. 2026-08 cart 标准再同步
+
+- [x] 配置加载启用未知键拒绝与 protovalidate，热更新失败时保留旧配置
+- [x] Config Center SDK 迁移到 `control-tower`，并同步日志级别热更新、OTel 与 Consul 深度健康检查
+- [x] 数据库示例改为 goose `migrations/` + 幂等 `seeds/`，业务内容保持为中性商品示例
+- [x] 金额示例改用整数分与精确 NUMERIC 转换，避免生产 cart 代码直接复制领域实现

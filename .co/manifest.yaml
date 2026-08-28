@@ -66,14 +66,12 @@ example:
     - internal/biz/search.go
     - internal/data/search.go
     - internal/service/search.go
-    - internal/data/schema/0001_products.sql
+    - internal/data/migrations/00001_products.sql
     - internal/data/queries/products.sql
     - internal/data/models/models.go
     - internal/data/models/products.sql.go
     - internal/data/models/querier.go
-  # models/db.go 不能删:它只含 DBTX 接口与 Queries 壳子,
-  # internal/data/db_postgres.go 的 Data.DB() 返回值就是 models.DBTX。
-  # 删了它整个 data 包编译不过,而它又要等 sqlc generate 才会重新出现。
+  # models/db.go 不能删:无资源模式仍需它提供 DBTX 与 Queries 壳子。
   keep:
     - internal/data/models/db.go
 
@@ -111,6 +109,7 @@ features:
       - infrastructure/redis/redis.conf
     requires:
       - github.com/redis/go-redis/v9
+      - github.com/redis/go-redis/extra/redisotel-native/v9
     dev_compose: infrastructure/redis/compose.yaml
     dev_required: true
 
@@ -173,7 +172,7 @@ features:
     files:
       - internal/pkg/config/source_file.go
 
-  # 配置中心源走 github.com/lens077/config-center 的 SDK。
+  # 配置中心源走 github.com/lens077/control-tower 的 SDK。
   # 生产用 CONFIG_SOURCE_FILE 指向 type: config_center 的 selector;
   # 契约 proto 由 SDK 携带,本服务不再复制 api/config。
   config-configcenter:
@@ -184,10 +183,9 @@ features:
       - internal/pkg/config/source_sdk.go
       - internal/pkg/config/source_sdk_test.go
       - internal/pkg/config/source_configcenter_watch_test.go
-      - internal/pkg/config/config_sdk_test.go
       - configs/source.dev.yaml.example
     requires:
-      - github.com/lens077/config-center
+      - github.com/lens077/control-tower
 
 groups:
   database:
@@ -270,7 +268,7 @@ layouts:
       - third_party
       - okteto.yaml
       - .stignore
-    # 配置中心源在 monorepo 里是默认设施:config-center 就跑在同一个仓库里。
+    # 配置中心源在 monorepo 里是默认设施，由 sibling 仓 control-tower 提供。
     # 实现本体在模板里(internal/pkg/config/source_sdk.go),
     # 不在这儿的 overlay 下 —— 放模板里才会被模板自己的 CI 编译到。
     features:
@@ -301,7 +299,7 @@ hooks:
       cmd: [buf, generate, --template, buf.gen.yaml, --path, internal/conf]
       when_layout: standalone
     - name: sqlc
-      # 新资源的 schema/queries 是刚写出来的,models/ 里还没有对应代码;
+      # 新资源的 migrations/queries 是刚写出来的,models/ 里还没有对应代码;
       # 不跑这一步,生成的 data 层引用不到 models.XxxParams,直接编译不过
       cmd: [sqlc, generate]
       when: postgres

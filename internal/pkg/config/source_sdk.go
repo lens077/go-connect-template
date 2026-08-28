@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lens077/config-center/sdk/configsource"
+	"github.com/lens077/control-tower/sdk/configsource"
 )
 
 var _ Source = (*sdkSource)(nil)
@@ -16,8 +16,9 @@ const (
 	watchMaxBackoff = 30 * time.Second
 )
 
-// sdkSource 把选源交给独立的 config-center 模块。
-// selector 是一份本地文件,服务在拿到远端 Bootstrap 之前就能决定从哪读配置。
+// sdkSource delegates source selection to the standalone config-center module.
+// The selector is a local file so a service can always choose its bootstrap
+// source before it has loaded a remote Bootstrap document.
 type sdkSource struct {
 	config configsource.Config
 }
@@ -43,7 +44,7 @@ func (s *sdkSource) Load(ctx context.Context) (map[string]any, error) {
 	return parseYAMLToMap(contents)
 }
 
-// Watch 在 SDK 单条流外包一层断线重连。
+// Watch preserves Cart's reconnect semantics around the SDK's single stream.
 func (s *sdkSource) Watch(ctx context.Context, onEvent func(WatchEvent)) error {
 	if s.config.Type != configsource.TypeConfigCenter {
 		return configsource.ErrUnsupportedWatch

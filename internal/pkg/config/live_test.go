@@ -17,15 +17,20 @@ func TestLive_GetReturnsLatest(t *testing.T) {
 	assert.Equal(t, "new", live.Get().GetServer().GetAddr())
 }
 
+// NewLive(nil) 必须给出一个可用的空配置:调用方到处都在 Get().GetX(),
+// 存进去一个 nil 会把「配置还没加载」变成一次 panic。
 func TestLive_NilIsNormalized(t *testing.T) {
 	live := NewLive(nil)
 	require.NotNil(t, live.Get())
 
+	// Set(nil) 同理:忽略而不是把已有配置清空
 	live.Set(&confv1.Bootstrap{Server: &confv1.Server{Addr: "kept"}})
 	live.Set(nil)
 	assert.Equal(t, "kept", live.Get().GetServer().GetAddr())
 }
 
+// 订阅者拿到的 cur 必须已经是 Get() 能读到的那一份,否则重建连接池的回调
+// 与同时进来的请求会看到两份不同的配置。
 func TestLive_SubscriberSeesSwappedValue(t *testing.T) {
 	live := NewLive(&confv1.Bootstrap{Server: &confv1.Server{Addr: "old"}})
 
@@ -59,6 +64,7 @@ func TestLive_SubscribeCancelIsIdempotent(t *testing.T) {
 	assert.Equal(t, 1, calls, "注销后不该再被回调")
 }
 
+// 回调是同步串行的:重建连接池这类有副作用的操作必须「上一次做完才开始下一次」。
 func TestLive_CallbacksAreSerialized(t *testing.T) {
 	live := NewLive(nil)
 

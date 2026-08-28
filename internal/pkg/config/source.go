@@ -10,12 +10,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Source 配置数据源:负责把整份 Bootstrap 配置(一份 YAML 文本)取回来。
-//
-// 每个实现放在自己的 source_*.go 里,自带环境变量解析与客户端构造,
-// 彼此不共享任何状态 —— 删掉其中一个文件,另一个仍能独立编译运行。
+// Source 负责取回整份 Bootstrap 配置（一份 YAML 文本）。
 type Source interface {
-	// Name 数据源标识。file 源与 CONFIG_SOURCE 取值一致;Config Center 源为 selector 的 type。
+	// Name 返回配置源标识。
 	Name() string
 	// Load 拉取整份 Bootstrap 配置,返回 viper 扁平化后的 map。
 	Load(ctx context.Context) (map[string]any, error)
@@ -31,7 +28,7 @@ type WatchEvent struct {
 	Err     error
 }
 
-// Watcher 是 Config Center 的变更推送能力。直接文件源仅供显式本地测试,
+// Watcher 是 Config Center 的变更推送能力。直接文件源仅供显式本地测试，
 // 不实现 Watcher。
 //
 // 实现方负责断线重连,Watch 只在 ctx 取消或遇到不可恢复的错误时返回。
@@ -41,11 +38,8 @@ type Watcher interface {
 	Watch(ctx context.Context, onEvent func(WatchEvent)) error
 }
 
-// NewSource 按环境变量选择数据源,刻意不做「主源失败自动降级到备源」。
-//
-// 生产路径:CONFIG_SOURCE_FILE 指向一份本地 selector,type 必须是 config_center。
-// 本地测试:CONFIG_SOURCE=file 读 YAML。未设置时默认 file,保证克隆下来就能跑。
-// CONFIG_SOURCE=configcenter 已废弃,不再从环境变量直连。
+// NewSource 正常启动必须通过 CONFIG_SOURCE_FILE 的 selector 读取 Config Center。
+// CONFIG_SOURCE=file 仅保留为显式本地测试入口；不存在任何远端回退路径。
 func NewSource() (Source, error) {
 	// +co:begin config-configcenter
 	if sourceConfigFile := env.GetEnvString(constants.EnvConfigSourceFile, ""); sourceConfigFile != "" {
@@ -53,7 +47,7 @@ func NewSource() (Source, error) {
 	}
 	// +co:end
 
-	name := env.GetEnvString(constants.EnvConfigSource, constants.DefaultConfigSource)
+	name := env.GetEnvString(constants.EnvConfigSource, "")
 	switch name {
 	// +co:begin config-file
 	case constants.ConfigSourceFile:
@@ -65,23 +59,17 @@ func NewSource() (Source, error) {
 			constants.EnvConfigSource, constants.ConfigSourceConfigCenter, constants.EnvConfigSourceFile)
 	// +co:end
 	// +co:anchor config-source-cases
+	case "":
+		return nil, fmt.Errorf("required env %s is missing", constants.EnvConfigSourceFile)
 	default:
-		return nil, fmt.Errorf("unknown %s=%q, expect one of %q",
-			constants.EnvConfigSource, name, availableSources())
-	}
-}
-
-// availableSources 供报错时列出本次构建实际编译进来的 CONFIG_SOURCE 取值。
-// 裁掉某个 source_*.go 后,这里的列表会随之变短,错误信息不会指向不存在的选项。
-func availableSources() []string {
-	return []string{
-		constants.ConfigSourceFile, // +co:config-file
-		// +co:anchor config-source-names
+		return nil, fmt.Errorf("unknown %s=%q, expect %q or set %s",
+			constants.EnvConfigSource, name,
+			constants.ConfigSourceFile, constants.EnvConfigSourceFile)
 	}
 }
 
 // parseYAMLToMap 将 YAML 文档解析为 viper 扁平 map,供 decodeConfig 填充 Bootstrap。
-// SDK 与显式本地文件入口都返回 YAML 文本,解析逻辑共用。
+// SDK 与显式本地文件入口都返回 YAML 文本，解析逻辑共用。
 func parseYAMLToMap(data []byte) (map[string]any, error) {
 	v := viper.New()
 	v.SetConfigType(constants.ConfigFileFormat)
