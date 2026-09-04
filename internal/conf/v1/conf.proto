@@ -16,7 +16,7 @@ message Bootstrap {
     (buf.validate.field).required = true
   ];
   Auth auth = 3[
-    (buf.validate.field).required = true
+    (buf.validate.field).required = false
   ];
   Observability observability = 4[
     (buf.validate.field).required = false

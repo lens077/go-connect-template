@@ -102,6 +102,7 @@ log:
     enable_response: true
   # +co:end
 
+# +co:begin casdoor
 auth:
   casdoor:
     endpoint: "http://localhost:8000"
@@ -110,3 +111,4 @@ auth:
     organization_name: "organization_name"
     application_name: "application_name"
     certificate: ""
+# +co:end

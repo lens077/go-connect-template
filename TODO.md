@@ -136,6 +136,8 @@
 - [x] 删除模板内 `dbutil`、`env`、`meta` 及通用 health-check helper 副本，消费方直接导入 kit
 - [x] Config Center 的 raw SDK adapter 归 `control-tower/sdk/configsource`，kit 不反向依赖 control-tower
 - [x] CLI 生成矩阵断言 kit 依赖与裁剪结果；发布前本地编译只在测试临时加入 replace
+- [x] `Bootstrap.auth` 改为可选；启用 Casdoor 时仍由 provider 校验 `auth.casdoor`，关闭 IAM 的生成配置可通过严格校验
+- [x] `config.yaml.example` 的 auth 块随 Casdoor 裁剪，避免无 IAM 生成物保留无效配置
 - [x] 已发布 kit `v0.3.0` 和 control-tower `v0.1.4`；`GOWORK=off` 独立 tidy/build/test 通过并刷新 `go.sum`
 
 这条链路不使用 BSR。BSR 分发 proto，不分发 Go 实现。
