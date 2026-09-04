@@ -1,0 +1,23 @@
+# 本地开发用的单节点 Meilisearch。宿主机端口统一映射为 9200，
+# 与 configs/dev.yml 的 provider-neutral search.catalog.endpoint 对齐。
+name: dev-meilisearch
+
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.53.1
+    restart: on-failure:5
+    ports:
+      - "9200:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7700/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - data:/meili_data
+
+volumes:
+  data:

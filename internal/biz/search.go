@@ -27,8 +27,7 @@ type (
 
 // SearchRepo 用户接口
 type SearchRepo interface {
-	// EnsureIndex 幂等地建索引。ES 会在写入时自动建索引,但字段类型是猜的,
-	// name 猜成 text 还好,spu_code 猜成 text 就没法精确匹配了 —— 所以显式建。
+	// EnsureIndex 幂等地创建索引,避免首次写入时由后端猜测字段与主键。
 	EnsureIndex(ctx context.Context, index string) error
 	// IndexProduct 写入(或覆盖)一篇文档
 	IndexProduct(ctx context.Context, index string, p Product) error

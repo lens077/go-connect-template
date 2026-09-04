@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"fmt"
 
+	kitotel "github.com/lens077/go-connect-kit/otel"
 	"github.com/lens077/go-connect-template/constants"
 	conf "github.com/lens077/go-connect-template/internal/conf/v1"
 	"github.com/redis/go-redis/v9"
@@ -54,6 +55,7 @@ func NewRedisClient(lc fx.Lifecycle, cfg *conf.Bootstrap, logger *zap.Logger) (*
 		logger.Info("redis tls enabled")
 	}
 
+	kitotel.EnsureRedisInstrumentation(logger)
 	rdb := redis.NewClient(opts)
 
 	dialTimeout := redisCfg.DialTimeout.AsDuration()

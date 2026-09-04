@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     GOOS=$TARGETOS GOARCH=$TARGETARCH CGO_ENABLED=$CGOENABLED \
     # 在根目录运行 build，但指向对应微服务的 main.go
-    go build -ldflags="-s -w -X main.Version=$VERSION" \
+    go build -ldflags="-s -w -X github.com/lens077/go-connect-kit/meta.Version=$VERSION" \
     -o /app/service ./services/${SERVICE}/cmd/server && \
     chmod +x /app/service
 

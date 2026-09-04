@@ -5,11 +5,10 @@ import (
 	"fmt"
 
 	"github.com/casdoor/casdoor-go-sdk/casdoorsdk" // +co:casdoor
-	"github.com/elastic/go-elasticsearch/v9"       // +co:elasticsearch
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/lens077/go-connect-kit/dbutil"
 	"github.com/lens077/go-connect-template/constants"
-	"github.com/lens077/go-connect-template/internal/pkg/dbutil"
 	"github.com/redis/go-redis/v9" // +co:redis
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -17,7 +16,7 @@ import (
 
 // 本文件只负责把各数据源客户端聚成一个 Data 并交给 fx。
 // 每种数据源的构造逻辑各自成文件(db_postgres.go / cache_redis.go /
-// auth_casdoor.go / search_elasticsearch.go),这样 co 裁剪某个 feature 时
+// auth_casdoor.go / search_<adapter>.go),这样 co 裁剪某个 feature 时
 // 是整文件删除加上这里的几行标记,不需要改写任何代码。
 //
 // 行尾 / 成对的 +co: 注释是给 co-cli 看的裁剪标记,对 Go 编译器只是普通注释。
@@ -27,12 +26,11 @@ var Module = fx.Module("data",
 	fx.Provide(
 		NewData,
 		NewPostgresPool,
-		NewRedisClient,         // +co:redis
-		NewCasdoorAuthClient,   // +co:casdoor
-		NewElasticSearchClient, // +co:elasticsearch
-		// 逗号是「与」:两个 feature 都开着这一行才保留。
-		// 示例资源本身就是拿 ES 实现的,单独留下它会编译不过。
-		NewSearchRepo, // +co:example,elasticsearch
+		NewRedisClient,       // +co:redis
+		NewCasdoorAuthClient, // +co:casdoor
+		// 检索 adapter 是生成期互斥项,生成物只会留下一个实现。
+		NewSearchCatalog, // +co:elasticsearch|meilisearch
+		NewSearchRepo,    // +co:example
 		// +co:anchor data-providers
 	),
 )
@@ -40,9 +38,9 @@ var Module = fx.Module("data",
 // Data 持有所有数据源的客户端
 type Data struct {
 	db           *pgxpool.Pool
-	rdb          *redis.Client              // +co:redis
-	auth         *casdoorsdk.Client         // +co:casdoor
-	es           *elasticsearch.TypedClient // +co:elasticsearch
+	rdb          *redis.Client      // +co:redis
+	auth         *casdoorsdk.Client // +co:casdoor
+	catalog      SearchCatalog      // +co:elasticsearch|meilisearch
 	dbErrHandler *dbutil.Handler
 	log          *zap.Logger
 }
@@ -52,15 +50,15 @@ func NewData(
 	db *pgxpool.Pool,
 	rdb *redis.Client, // +co:redis
 	auth *casdoorsdk.Client, // +co:casdoor
-	es *elasticsearch.TypedClient, // +co:elasticsearch
+	catalog SearchCatalog, // +co:elasticsearch|meilisearch
 	logger *zap.Logger,
 ) *Data {
 	return &Data{
-		db:   db,
-		rdb:  rdb,  // +co:redis
-		auth: auth, // +co:casdoor
-		es:   es,   // +co:elasticsearch
-		log:  logger,
+		db:      db,
+		rdb:     rdb,     // +co:redis
+		auth:    auth,    // +co:casdoor
+		catalog: catalog, // +co:elasticsearch|meilisearch
+		log:     logger,
 		dbErrHandler: dbutil.NewHandler(
 			// 把 pg 的错误码映射成业务错误,在这里集中登记:
 			// dbutil.WithErrorMapping("23505", biz.ErrAlreadyExists),

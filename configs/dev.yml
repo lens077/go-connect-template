@@ -3,7 +3,7 @@
 # 这份文件不含任何真实凭据,可以安全提交:主机名一律指向 localhost,TLS 全部关闭。
 #
 # 密码分两类,别混:
-#   - postgres / redis / elasticsearch 用的是 infrastructure/<组件>/compose.yaml
+#   - postgres / redis / 所选检索后端用的是 infrastructure/<组件>/compose.yaml
 #     里写死的开发口令,两边必须一致 —— 写成占位符的话,照着 README 起完容器
 #     再 make dev 依然连不上,而报错只是一句 password authentication failed。
 #     改这里就要同步改对应的 compose(redis 的在 redis.conf)。
@@ -117,16 +117,17 @@ discovery:
       ca_pem: ""
 # +co:end
 
-# +co:begin elasticsearch
+# +co:begin elasticsearch|meilisearch
 search:
-  elastic_search:
-    addresses:
-      - http://127.0.0.1:9200
-    username: "elastic"
-    # 与 infrastructure/elasticsearch/compose.yaml 的 ELASTIC_PASSWORD 一致。
-    # 那份 compose 的镜像大版本必须跟 go.mod 的 go-elasticsearch 对齐,
-    # 否则客户端发的兼容头会让服务端一律返回 400
-    password: "devpassword"
+  catalog:
+    # 两份本地 compose 都映射到同一个宿主机端口,生成后只会保留所选的一份。
+    endpoint: "http://127.0.0.1:9200"
+    # Basic Auth 示例。 +co:elasticsearch
+    username: "elastic" # +co:elasticsearch
+    password: "devpassword" # +co:elasticsearch
+    # 本地 development 模式不启用鉴权。 +co:meilisearch
+    api_key: "" # +co:meilisearch
+    index: "products"
     tls:
       enable: false
       insecure_skip_verify: false
@@ -144,7 +145,7 @@ log:
     error_level: error
     format: console
   # +co:begin elasticsearch
-  elasticsearch:
+  search:
     enable_request: true
     enable_response: true
   # +co:end

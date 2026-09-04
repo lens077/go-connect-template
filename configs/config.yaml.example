@@ -1,6 +1,9 @@
 server:
   addr: "0.0.0.0:30000"
-  timeout: 10
+  http:
+    read_timeout: "5s"
+    write_timeout: "5s"
+    idle_timeout: "60s"
   cors:
     allowed_origins:
       - http://localhost:3000
@@ -21,8 +24,8 @@ data:
       pool:
         max_conns: 20
         min_conns: 5
-        max_conn_lifetime: 3600
-        max_conn_idle_time: 300
+        max_conn_lifetime: "1h"
+        max_conn_idle_time: "5m"
   cache:
     redis:
       host: localhost
@@ -34,9 +37,9 @@ data:
       username: username
       password: password
       db: 0
-      dial_timeout: 5
-      read_timeout: 3
-      write_timeout: 3
+      dial_timeout: "5s"
+      read_timeout: "3s"
+      write_timeout: "3s"
       pool_size: 10
       min_idle_conns: 5
 
@@ -66,28 +69,38 @@ discovery:
     addr: localhost:8500
     health_check: true
     scheme: http
-    ttl:
-      # Consul Agent 期望的心跳时间间隔
-      duration: "30s"
-      # 单位: 毫秒
-      ping_interval_seconds: 1
+    check:
+      ttl:
+        duration: "30s"
+        ping_interval: "10s"
+      deregister_critical_service_after: "1m"
     tls:
       enable: false
       insecure_skip_verify: true
       ca_pem: ""
+# +co:begin elasticsearch|meilisearch
 search:
-  elastic_search:
-    addresses:
-      - http://localhost:8200
-    username: elastic
-    password: password
+  catalog:
+    endpoint: http://localhost:9200
+    username: elastic # +co:elasticsearch
+    password: password # +co:elasticsearch
+    api_key: "" # +co:meilisearch
+    index: products
+# +co:end
 
 log:
-  level: debug
-  format: console
-  es_log:
-    enable_request_log: true
-    enable_response_log: true
+  application:
+    level: debug
+    format: console
+  framework:
+    log_level: info
+    error_level: error
+    format: console
+  # +co:begin elasticsearch
+  search:
+    enable_request: true
+    enable_response: true
+  # +co:end
 
 auth:
   casdoor:

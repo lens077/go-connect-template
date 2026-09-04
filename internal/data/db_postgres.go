@@ -10,6 +10,7 @@ import (
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	kitotel "github.com/lens077/go-connect-kit/otel"
 	"github.com/lens077/go-connect-template/constants"
 	conf "github.com/lens077/go-connect-template/internal/conf/v1"
 	"github.com/lens077/go-connect-template/internal/data/models"
@@ -133,7 +134,10 @@ func NewPostgresPool(lc fx.Lifecycle, cfg *conf.Bootstrap, logger *zap.Logger) (
 	}
 
 	// 链路追踪:每条 SQL 都会带上 span,与 otel.Module 共用同一个 TracerProvider
-	pgConf.ConnConfig.Tracer = otelpgx.NewTracer()
+	pgConf.ConnConfig.Tracer = otelpgx.NewTracer(
+		otelpgx.WithTrimSQLInSpanName(),
+		otelpgx.WithSpanNameFunc(kitotel.SQLSpanName),
+	)
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), pgConf)
 	if err != nil {

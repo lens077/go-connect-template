@@ -128,7 +128,7 @@ type Log struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Framework     *Log_Framework         `protobuf:"bytes,1,opt,name=framework,proto3" json:"framework,omitempty"`
 	Application   *Log_Application       `protobuf:"bytes,2,opt,name=application,proto3" json:"application,omitempty"`
-	Elasticsearch *Log_ElasticSearch     `protobuf:"bytes,3,opt,name=elasticsearch,proto3" json:"elasticsearch,omitempty"`
+	Search        *Log_Search            `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -177,9 +177,9 @@ func (x *Log) GetApplication() *Log_Application {
 	return nil
 }
 
-func (x *Log) GetElasticsearch() *Log_ElasticSearch {
+func (x *Log) GetSearch() *Log_Search {
 	if x != nil {
-		return x.Elasticsearch
+		return x.Search
 	}
 	return nil
 }
@@ -498,7 +498,7 @@ func (x *Discovery) GetConsul() *Discovery_Consul {
 
 type Search struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ElasticSearch *Search_ElasticSearch  `protobuf:"bytes,1,opt,name=elastic_search,json=elasticSearch,proto3" json:"elastic_search,omitempty"`
+	Catalog       *Search_Catalog        `protobuf:"bytes,1,opt,name=catalog,proto3" json:"catalog,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -533,9 +533,9 @@ func (*Search) Descriptor() ([]byte, []int) {
 	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *Search) GetElasticSearch() *Search_ElasticSearch {
+func (x *Search) GetCatalog() *Search_Catalog {
 	if x != nil {
-		return x.ElasticSearch
+		return x.Catalog
 	}
 	return nil
 }
@@ -652,7 +652,7 @@ func (x *Log_Application) GetLevel() string {
 	return ""
 }
 
-type Log_ElasticSearch struct {
+type Log_Search struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	EnableRequest  bool                   `protobuf:"varint,1,opt,name=enable_request,json=enableRequest,proto3" json:"enable_request,omitempty"`
 	EnableResponse bool                   `protobuf:"varint,2,opt,name=enable_response,json=enableResponse,proto3" json:"enable_response,omitempty"`
@@ -660,20 +660,20 @@ type Log_ElasticSearch struct {
 	sizeCache      protoimpl.SizeCache
 }
 
-func (x *Log_ElasticSearch) Reset() {
-	*x = Log_ElasticSearch{}
+func (x *Log_Search) Reset() {
+	*x = Log_Search{}
 	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Log_ElasticSearch) String() string {
+func (x *Log_Search) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Log_ElasticSearch) ProtoMessage() {}
+func (*Log_Search) ProtoMessage() {}
 
-func (x *Log_ElasticSearch) ProtoReflect() protoreflect.Message {
+func (x *Log_Search) ProtoReflect() protoreflect.Message {
 	mi := &file_internal_conf_v1_conf_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -685,19 +685,19 @@ func (x *Log_ElasticSearch) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Log_ElasticSearch.ProtoReflect.Descriptor instead.
-func (*Log_ElasticSearch) Descriptor() ([]byte, []int) {
+// Deprecated: Use Log_Search.ProtoReflect.Descriptor instead.
+func (*Log_Search) Descriptor() ([]byte, []int) {
 	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{1, 2}
 }
 
-func (x *Log_ElasticSearch) GetEnableRequest() bool {
+func (x *Log_Search) GetEnableRequest() bool {
 	if x != nil {
 		return x.EnableRequest
 	}
 	return false
 }
 
-func (x *Log_ElasticSearch) GetEnableResponse() bool {
+func (x *Log_Search) GetEnableResponse() bool {
 	if x != nil {
 		return x.EnableResponse
 	}
@@ -1931,30 +1931,35 @@ func (x *Discovery_Consul_Check_TTL) GetPingInterval() *durationpb.Duration {
 	return nil
 }
 
-type Search_ElasticSearch struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Addresses     []string                  `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
-	Username      string                    `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	Password      string                    `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
-	Tls           *Search_ElasticSearch_Tls `protobuf:"bytes,4,opt,name=tls,proto3" json:"tls,omitempty"`
+// Catalog 是检索 adapter 共用的项目内配置。生成器只保留一个实现,
+// 调用方不需要了解底层 SDK 类型。
+type Search_Catalog struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Endpoint string                 `protobuf:"bytes,1,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	// Basic Auth 与 API key 都放在共用契约里;具体 adapter 只读取自己支持的字段。
+	Username      string              `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Password      string              `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	ApiKey        string              `protobuf:"bytes,4,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	Index         string              `protobuf:"bytes,5,opt,name=index,proto3" json:"index,omitempty"`
+	Tls           *Search_Catalog_Tls `protobuf:"bytes,6,opt,name=tls,proto3" json:"tls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Search_ElasticSearch) Reset() {
-	*x = Search_ElasticSearch{}
+func (x *Search_Catalog) Reset() {
+	*x = Search_Catalog{}
 	mi := &file_internal_conf_v1_conf_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Search_ElasticSearch) String() string {
+func (x *Search_Catalog) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Search_ElasticSearch) ProtoMessage() {}
+func (*Search_Catalog) ProtoMessage() {}
 
-func (x *Search_ElasticSearch) ProtoReflect() protoreflect.Message {
+func (x *Search_Catalog) ProtoReflect() protoreflect.Message {
 	mi := &file_internal_conf_v1_conf_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1966,40 +1971,54 @@ func (x *Search_ElasticSearch) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Search_ElasticSearch.ProtoReflect.Descriptor instead.
-func (*Search_ElasticSearch) Descriptor() ([]byte, []int) {
+// Deprecated: Use Search_Catalog.ProtoReflect.Descriptor instead.
+func (*Search_Catalog) Descriptor() ([]byte, []int) {
 	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{8, 0}
 }
 
-func (x *Search_ElasticSearch) GetAddresses() []string {
+func (x *Search_Catalog) GetEndpoint() string {
 	if x != nil {
-		return x.Addresses
+		return x.Endpoint
 	}
-	return nil
+	return ""
 }
 
-func (x *Search_ElasticSearch) GetUsername() string {
+func (x *Search_Catalog) GetUsername() string {
 	if x != nil {
 		return x.Username
 	}
 	return ""
 }
 
-func (x *Search_ElasticSearch) GetPassword() string {
+func (x *Search_Catalog) GetPassword() string {
 	if x != nil {
 		return x.Password
 	}
 	return ""
 }
 
-func (x *Search_ElasticSearch) GetTls() *Search_ElasticSearch_Tls {
+func (x *Search_Catalog) GetApiKey() string {
+	if x != nil {
+		return x.ApiKey
+	}
+	return ""
+}
+
+func (x *Search_Catalog) GetIndex() string {
+	if x != nil {
+		return x.Index
+	}
+	return ""
+}
+
+func (x *Search_Catalog) GetTls() *Search_Catalog_Tls {
 	if x != nil {
 		return x.Tls
 	}
 	return nil
 }
 
-type Search_ElasticSearch_Tls struct {
+type Search_Catalog_Tls struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Enable             bool                   `protobuf:"varint,1,opt,name=enable,proto3" json:"enable,omitempty"`
 	InsecureSkipVerify bool                   `protobuf:"varint,2,opt,name=insecure_skip_verify,json=insecureSkipVerify,proto3" json:"insecure_skip_verify,omitempty"`
@@ -2008,20 +2027,20 @@ type Search_ElasticSearch_Tls struct {
 	sizeCache          protoimpl.SizeCache
 }
 
-func (x *Search_ElasticSearch_Tls) Reset() {
-	*x = Search_ElasticSearch_Tls{}
+func (x *Search_Catalog_Tls) Reset() {
+	*x = Search_Catalog_Tls{}
 	mi := &file_internal_conf_v1_conf_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Search_ElasticSearch_Tls) String() string {
+func (x *Search_Catalog_Tls) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Search_ElasticSearch_Tls) ProtoMessage() {}
+func (*Search_Catalog_Tls) ProtoMessage() {}
 
-func (x *Search_ElasticSearch_Tls) ProtoReflect() protoreflect.Message {
+func (x *Search_Catalog_Tls) ProtoReflect() protoreflect.Message {
 	mi := &file_internal_conf_v1_conf_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2033,26 +2052,26 @@ func (x *Search_ElasticSearch_Tls) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Search_ElasticSearch_Tls.ProtoReflect.Descriptor instead.
-func (*Search_ElasticSearch_Tls) Descriptor() ([]byte, []int) {
+// Deprecated: Use Search_Catalog_Tls.ProtoReflect.Descriptor instead.
+func (*Search_Catalog_Tls) Descriptor() ([]byte, []int) {
 	return file_internal_conf_v1_conf_proto_rawDescGZIP(), []int{8, 0, 0}
 }
 
-func (x *Search_ElasticSearch_Tls) GetEnable() bool {
+func (x *Search_Catalog_Tls) GetEnable() bool {
 	if x != nil {
 		return x.Enable
 	}
 	return false
 }
 
-func (x *Search_ElasticSearch_Tls) GetInsecureSkipVerify() bool {
+func (x *Search_Catalog_Tls) GetInsecureSkipVerify() bool {
 	if x != nil {
 		return x.InsecureSkipVerify
 	}
 	return false
 }
 
-func (x *Search_ElasticSearch_Tls) GetCaPem() string {
+func (x *Search_Catalog_Tls) GetCaPem() string {
 	if x != nil {
 		return x.CaPem
 	}
@@ -2072,11 +2091,11 @@ const file_internal_conf_v1_conf_proto_rawDesc = "" +
 	"\tdiscovery\x18\x05 \x01(\v2\x12.conf.v1.DiscoveryB\x06\xbaH\x03\xc8\x01\x00R\tdiscovery\x12/\n" +
 	"\x06search\x18\x06 \x01(\v2\x0f.conf.v1.SearchB\x06\xbaH\x03\xc8\x01\x00R\x06search\x12&\n" +
 	"\x03log\x18\a \x01(\v2\f.conf.v1.LogB\x06\xbaH\x03\xc8\x01\x01R\x03log\x12,\n" +
-	"\x05store\x18\b \x01(\v2\x0e.conf.v1.StoreB\x06\xbaH\x03\xc8\x01\x00R\x05store\"\x8d\x05\n" +
+	"\x05store\x18\b \x01(\v2\x0e.conf.v1.StoreB\x06\xbaH\x03\xc8\x01\x00R\x05store\"\xf1\x04\n" +
 	"\x03Log\x124\n" +
 	"\tframework\x18\x01 \x01(\v2\x16.conf.v1.Log.FrameworkR\tframework\x12:\n" +
-	"\vapplication\x18\x02 \x01(\v2\x18.conf.v1.Log.ApplicationR\vapplication\x12@\n" +
-	"\relasticsearch\x18\x03 \x01(\v2\x1a.conf.v1.Log.ElasticSearchR\relasticsearch\x1a\xe5\x01\n" +
+	"\vapplication\x18\x02 \x01(\v2\x18.conf.v1.Log.ApplicationR\vapplication\x12+\n" +
+	"\x06search\x18\x03 \x01(\v2\x13.conf.v1.Log.SearchR\x06search\x1a\xe5\x01\n" +
 	"\tFramework\x12,\n" +
 	"\x06format\x18\x01 \x01(\tB\x14\xbaH\x11r\x0fR\aconsoleR\x04jsonR\x06format\x12R\n" +
 	"\tlog_level\x18\x02 \x01(\tB5\xbaH2r0R\x05debugR\x04infoR\x04warnR\x05errorR\x06dpanicR\x05panicR\x05fatalR\blogLevel\x12V\n" +
@@ -2084,8 +2103,8 @@ const file_internal_conf_v1_conf_proto_rawDesc = "" +
 	"errorLevel\x1a\x88\x01\n" +
 	"\vApplication\x12,\n" +
 	"\x06format\x18\x01 \x01(\tB\x14\xbaH\x11r\x0fR\aconsoleR\x04jsonR\x06format\x12K\n" +
-	"\x05level\x18\x02 \x01(\tB5\xbaH2r0R\x05debugR\x04infoR\x04warnR\x05errorR\x06dpanicR\x05panicR\x05fatalR\x05level\x1a_\n" +
-	"\rElasticSearch\x12%\n" +
+	"\x05level\x18\x02 \x01(\tB5\xbaH2r0R\x05debugR\x04infoR\x04warnR\x05errorR\x06dpanicR\x05panicR\x05fatalR\x05level\x1aX\n" +
+	"\x06Search\x12%\n" +
 	"\x0eenable_request\x18\x01 \x01(\bR\renableRequest\x12'\n" +
 	"\x0fenable_response\x18\x02 \x01(\bR\x0eenableResponse\"\xe8\x03\n" +
 	"\x06Server\x12=\n" +
@@ -2203,19 +2222,20 @@ const file_internal_conf_v1_conf_proto_rawDesc = "" +
 	"\x03TTL\x12\x1a\n" +
 	"\bduration\x18\x01 \x01(\tR\bduration\x12J\n" +
 	"\rping_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationB\n" +
-	"\xbaH\a\xaa\x01\x042\x02\b\x05R\fpingInterval\"\x90\x03\n" +
-	"\x06Search\x12D\n" +
-	"\x0eelastic_search\x18\x01 \x01(\v2\x1d.conf.v1.Search.ElasticSearchR\relasticSearch\x1a\xbf\x02\n" +
-	"\rElasticSearch\x12H\n" +
-	"\taddresses\x18\x01 \x03(\tB*\xbaH'\x92\x01$\"\"r \x92\x02\x1ahttp://es.example.com:9200\x88\x01\x01R\taddresses\x12+\n" +
-	"\busername\x18\x02 \x01(\tB\x0f\xbaH\fr\n" +
-	"\x92\x02\aelasticR\busername\x12\x1a\n" +
-	"\bpassword\x18\x03 \x01(\tR\bpassword\x123\n" +
-	"\x03tls\x18\x04 \x01(\v2!.conf.v1.Search.ElasticSearch.TlsR\x03tls\x1af\n" +
+	"\xbaH\a\xaa\x01\x042\x02\b\x05R\fpingInterval\"\xe4\x03\n" +
+	"\x06Search\x129\n" +
+	"\acatalog\x18\x01 \x01(\v2\x17.conf.v1.Search.CatalogB\x06\xbaH\x03\xc8\x01\x01R\acatalog\x1a\x9e\x03\n" +
+	"\aCatalog\x12H\n" +
+	"\bendpoint\x18\x01 \x01(\tB,\xbaH)r'\x18\x80\x10\x92\x02\x1ehttp://search.example.com:9200\x88\x01\x01R\bendpoint\x12$\n" +
+	"\busername\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\busername\x12$\n" +
+	"\bpassword\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x04R\bpassword\x12!\n" +
+	"\aapi_key\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x04R\x06apiKey\x128\n" +
+	"\x05index\x18\x05 \x01(\tB\"\xbaH\x1fr\x1d\x10\x01\x18\xff\x012\x16^[a-z0-9][a-z0-9._-]*$R\x05index\x12-\n" +
+	"\x03tls\x18\x06 \x01(\v2\x1b.conf.v1.Search.Catalog.TlsR\x03tls\x1aq\n" +
 	"\x03Tls\x12\x16\n" +
 	"\x06enable\x18\x01 \x01(\bR\x06enable\x120\n" +
-	"\x14insecure_skip_verify\x18\x02 \x01(\bR\x12insecureSkipVerify\x12\x15\n" +
-	"\x06ca_pem\x18\x03 \x01(\tR\x05caPemB\x95\x01\n" +
+	"\x14insecure_skip_verify\x18\x02 \x01(\bR\x12insecureSkipVerify\x12 \n" +
+	"\x06ca_pem\x18\x03 \x01(\tB\t\xbaH\x06r\x04\x18\x80\x80\x04R\x05caPemB\x95\x01\n" +
 	"\vcom.conf.v1B\tConfProtoP\x01Z>github.com/lens077/go-connect-template/internal/conf/v1;confv1\xa2\x02\x03CXX\xaa\x02\aConf.V1\xca\x02\aConf\\V1\xe2\x02\x13Conf\\V1\\GPBMetadata\xea\x02\bConf::V1b\x06proto3"
 
 var (
@@ -2243,7 +2263,7 @@ var file_internal_conf_v1_conf_proto_goTypes = []any{
 	(*Search)(nil),                 // 8: conf.v1.Search
 	(*Log_Framework)(nil),          // 9: conf.v1.Log.Framework
 	(*Log_Application)(nil),        // 10: conf.v1.Log.Application
-	(*Log_ElasticSearch)(nil),      // 11: conf.v1.Log.ElasticSearch
+	(*Log_Search)(nil),             // 11: conf.v1.Log.Search
 	(*Server_HTTP)(nil),            // 12: conf.v1.Server.HTTP
 	(*Server_Cors)(nil),            // 13: conf.v1.Server.Cors
 	(*Data_Database)(nil),          // 14: conf.v1.Data.Database
@@ -2264,8 +2284,8 @@ var file_internal_conf_v1_conf_proto_goTypes = []any{
 	(*Discovery_Consul_Tls)(nil),                // 29: conf.v1.Discovery.Consul.Tls
 	(*Discovery_Consul_Check)(nil),              // 30: conf.v1.Discovery.Consul.Check
 	(*Discovery_Consul_Check_TTL)(nil),          // 31: conf.v1.Discovery.Consul.Check.TTL
-	(*Search_ElasticSearch)(nil),                // 32: conf.v1.Search.ElasticSearch
-	(*Search_ElasticSearch_Tls)(nil),            // 33: conf.v1.Search.ElasticSearch.Tls
+	(*Search_Catalog)(nil),                      // 32: conf.v1.Search.Catalog
+	(*Search_Catalog_Tls)(nil),                  // 33: conf.v1.Search.Catalog.Tls
 	(*durationpb.Duration)(nil),                 // 34: google.protobuf.Duration
 	(*wrapperspb.DoubleValue)(nil),              // 35: google.protobuf.DoubleValue
 }
@@ -2280,7 +2300,7 @@ var file_internal_conf_v1_conf_proto_depIdxs = []int32{
 	5,  // 7: conf.v1.Bootstrap.store:type_name -> conf.v1.Store
 	9,  // 8: conf.v1.Log.framework:type_name -> conf.v1.Log.Framework
 	10, // 9: conf.v1.Log.application:type_name -> conf.v1.Log.Application
-	11, // 10: conf.v1.Log.elasticsearch:type_name -> conf.v1.Log.ElasticSearch
+	11, // 10: conf.v1.Log.search:type_name -> conf.v1.Log.Search
 	12, // 11: conf.v1.Server.http:type_name -> conf.v1.Server.HTTP
 	13, // 12: conf.v1.Server.cors:type_name -> conf.v1.Server.Cors
 	14, // 13: conf.v1.Data.database:type_name -> conf.v1.Data.Database
@@ -2291,7 +2311,7 @@ var file_internal_conf_v1_conf_proto_depIdxs = []int32{
 	25, // 18: conf.v1.Observability.metric:type_name -> conf.v1.Observability.Metric
 	26, // 19: conf.v1.Observability.log:type_name -> conf.v1.Observability.Logging
 	28, // 20: conf.v1.Discovery.consul:type_name -> conf.v1.Discovery.Consul
-	32, // 21: conf.v1.Search.elastic_search:type_name -> conf.v1.Search.ElasticSearch
+	32, // 21: conf.v1.Search.catalog:type_name -> conf.v1.Search.Catalog
 	34, // 22: conf.v1.Server.HTTP.read_timeout:type_name -> google.protobuf.Duration
 	34, // 23: conf.v1.Server.HTTP.write_timeout:type_name -> google.protobuf.Duration
 	34, // 24: conf.v1.Server.HTTP.idle_timeout:type_name -> google.protobuf.Duration
@@ -2316,7 +2336,7 @@ var file_internal_conf_v1_conf_proto_depIdxs = []int32{
 	30, // 43: conf.v1.Discovery.Consul.check:type_name -> conf.v1.Discovery.Consul.Check
 	31, // 44: conf.v1.Discovery.Consul.Check.ttl:type_name -> conf.v1.Discovery.Consul.Check.TTL
 	34, // 45: conf.v1.Discovery.Consul.Check.TTL.ping_interval:type_name -> google.protobuf.Duration
-	33, // 46: conf.v1.Search.ElasticSearch.tls:type_name -> conf.v1.Search.ElasticSearch.Tls
+	33, // 46: conf.v1.Search.Catalog.tls:type_name -> conf.v1.Search.Catalog.Tls
 	47, // [47:47] is the sub-list for method output_type
 	47, // [47:47] is the sub-list for method input_type
 	47, // [47:47] is the sub-list for extension type_name

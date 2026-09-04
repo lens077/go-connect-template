@@ -17,13 +17,14 @@ co new cart --module github.com/acme/shop --yes
 - **依赖注入**: Uber FX
 - **数据库**: PostgreSQL (pgx/v5 + sqlc)
 - **缓存**: Redis
-- **搜索**: Elasticsearch v9
+- **搜索**: Elasticsearch v9 / Meilisearch（由 `co` 在生成期二选一）
 - **身份认证**: Casdoor
 - **服务发现**: Consul
 - **可观测性**: OpenTelemetry
 - **日志**: Zap
 - **参数校验**: protovalidate（`connectrpc.com/validate` 拦截器）
-- **配置**: 自带 `Source` 接口（本地 file / Config Center SDK），YAML 解析用 Viper
+- **共享基础设施**: `go-connect-kit` 提供配置、日志、OTel、Consul、数据库错误映射、环境变量与构建元信息
+- **配置源**: kit 提供 file source；`control-tower/sdk/configsource` 适配 Config Center
 
 > 数据库目前只提供 PostgreSQL，mysql / sqlite 见 `TODO.md`。
 
@@ -40,28 +41,27 @@ co new cart --module github.com/acme/shop --yes
 ├── constants/                  # 常量与环境变量名
 ├── configs/                    # dev.yml / pre.yml / source.dev.yaml.example（勿提交真实凭据）
 ├── deploy/                     # 部署配置 (Kubernetes)
-├── infrastructure/             # 本地依赖的 compose（postgres / redis / consul）
+├── infrastructure/             # 本地依赖的 compose（postgres / redis / 检索后端 / consul）
 ├── internal/
 │   ├── biz/                    # 业务逻辑层
 │   ├── conf/v1/                # 配置结构（由 conf.proto 生成）
 │   ├── data/                   # 数据访问层，一个 feature 一个文件
 │   │   ├── db_postgres.go      #   PostgreSQL（含 TLS / verify-ca）
 │   │   ├── cache_redis.go      #   Redis
-│   │   ├── search_elasticsearch.go
+│   │   ├── search_catalog.go       #   项目自有 interface 与 DTO
+│   │   ├── search_elasticsearch.go #   生成期候选 adapter
+│   │   ├── search_meilisearch.go   #   生成期候选 adapter
 │   │   ├── auth_casdoor.go
 │   │   ├── migrations/             #   建表 DDL，000NN_ 前缀决定 sqlc 的读取顺序
 │   │   ├── queries/            #   sqlc 查询
 │   │   └── models/             #   sqlc 生成物
-│   ├── pkg/                    # 工具包
-│   │   ├── config/             #   Source 接口 + file / Config Center SDK
-│   │   ├── dbutil/             #   统一的数据库错误映射
-│   │   ├── env/                #   环境变量读取
-│   │   ├── log/                #   日志封装
-│   │   ├── meta/               #   元信息
+│   ├── pkg/                    # 项目自有工具与 kit adapter
+│   │   ├── config/             #   Bootstrap 泛型实例化 + restart-required 投影
+│   │   ├── log/                #   confv1.Log → kit/log Options
+│   │   ├── otel/               #   confv1.Observability → kit/otel Options
+│   │   ├── registry/           #   confv1.Discovery → kit/registry Options
 │   │   ├── minio.go            #   对象存储 URL 拼接（只存 key，域名放配置）
-│   │   ├── money/              #   NUMERIC ↔ decimal 转换
-│   │   ├── otel/               #   OpenTelemetry
-│   │   └── registry/           #   服务注册
+│   │   └── money/              #   NUMERIC ↔ decimal 转换
 │   ├── server/                 # HTTP 服务器 + 健康检查
 │   └── service/                # Connect handler
 ├── third_party/                # 第三方 Protobuf 定义
@@ -77,11 +77,11 @@ co new cart --module github.com/acme/shop --yes
 
 - ✅ **Connect RPC**: 高性能 RPC 框架，支持 gRPC、gRPC-Web 和 Connect 协议
 - ✅ **依赖注入**: 使用 FX 实现声明式依赖管理
-- ✅ **多数据源**: PostgreSQL + Redis + Elasticsearch
+- ✅ **多数据源**: PostgreSQL + Redis + 一个生成期选定的检索 adapter
 - ✅ **服务发现**: Consul 集成，支持健康检查和自动注销
 - ✅ **可观测性**: 完整的 OTel 追踪、指标和日志支持
-- ✅ **配置管理**: 可插拔数据源，本地文件 / 本地文件 / Config Center selector
-- ✅ **健康检查**: 数据库、缓存、ES 的健康检查端点
+- ✅ **配置管理**: kit 的严格加载与 LKG 热更新，本地文件 / Config Center selector 二选一
+- ✅ **健康检查**: 数据库、缓存和所选检索后端的健康检查端点
 - ✅ **参数校验**: protobuf 里声明约束，拦截器统一拒绝非法请求
 - ✅ **中间件**: 请求日志、CORS、错误处理
 - ✅ **优雅关闭**: 7 秒超时的优雅关闭流程
@@ -97,14 +97,20 @@ co new cart --module github.com/acme/shop --yes
 docker compose -f infrastructure/postgres/compose.yaml up -d
 docker compose -f infrastructure/redis/compose.yaml up -d
 
-# elasticsearch 可选：连不上只在 /healthz 里显示不健康，检索功能降级
+# 检索后端可选，二选一；连不上只让检索功能降级
 docker compose -f infrastructure/elasticsearch/compose.yaml up -d
+# 或
+docker compose -f infrastructure/meilisearch/compose.yaml up -d
 ```
+
+`co new --search elasticsearch` 与 `co new --search meilisearch` 是**生成期选择**，不是运行时开关。
+生成物只保留所选 adapter 的 Go 文件、依赖与 compose；仓储层统一通过项目自有的
+`SearchCatalog` interface 调用，不接触厂商 SDK 类型。
 
 迁移使用 goose 版本文件，存放在 `internal/data/migrations/`；示例种子存放在
 `internal/data/seeds/`。生产服务必须通过迁移命令升级，不能依赖容器首次启动脚本。
 
-> ES 镜像的大版本必须跟 `go.mod` 里的客户端对齐（现在是 `go-elasticsearch/v9` → ES 9.x）。
+> Elasticsearch 镜像的大版本必须跟 `go.mod` 里的客户端对齐（现在是 `go-elasticsearch/v9` → Elasticsearch 9.x）。
 > v9 客户端会发 `compatible-with=9` 的 Accept 头，8.x 服务端不认，连 Ping 都返回 400。
 
 Consul 的 compose 在 `infrastructure/consul/`，但 `make dev` 用不到它：配置从本地文件读，
@@ -156,18 +162,18 @@ make k8s-dev
 
 ## 配置说明
 
-整份 `Bootstrap` 配置从**一个**数据源取回。生产路径由 `CONFIG_SOURCE_FILE` 指向一份本地 selector，`type` 必须是 `config_center`；本地测试显式设 `CONFIG_SOURCE=file`。未设置时默认 `file`，保证克隆下来就能跑。
+整份 `Bootstrap` 配置从**一个**数据源取回。生产路径由 `CONFIG_SOURCE_FILE` 指向一份本地 selector，`type` 必须是 `config_center`；本地测试显式设 `CONFIG_SOURCE=file`。`make dev` 已设置 file 所需变量；直接运行二进制时必须明确选择来源，不做静默默认。
 
 | 路径 | 说明 | 需要的环境变量 |
 |---|---|---|
 | `CONFIG_SOURCE_FILE`（生产） | Config Center SDK，selector 的 `type` 必须是 `config_center` | Secret 挂载的 selector 内含 address / namespace / environment / key / service_token |
-| `CONFIG_SOURCE=file`（默认） | 读本地 YAML，不接配置中心 | `CONFIG_FILE`（默认 `configs/dev.yml`） |
+| `CONFIG_SOURCE=file`（本地） | 读本地 YAML，不接配置中心 | 必须设置 `CONFIG_FILE`；`make dev` 使用 `configs/dev.yml` |
 
 `CONFIG_SOURCE=configcenter` 与 Consul KV 作为配置源均已退役：前者请改挂 selector 文件，后者 Consul 只保留服务注册/发现。
 
 刻意**不做**「主源失败自动降级到备源」：配置来源必须是确定的。静默降级会让服务拿着一份你以为早已废弃的配置正常跑起来，比直接启动失败难排查得多。
 
-远端配置支持 Watch 热更新。`*Bootstrap` 是启动快照；需要随时读到最新值的消费者注入 `*Live`。`server` / `discovery` / `observability` 变更会打警告，需要滚动重启才生效。
+远端配置支持 Watch 热更新。`*Bootstrap` 是启动快照；需要随时读到最新值的消费者注入 `*Live`。`server` / `discovery` / `observability` / `search` 变更会打警告，需要滚动重启才生效。
 
 ### 环境变量
 
@@ -177,8 +183,8 @@ make k8s-dev
 | `SERVICE_VERSION` | 服务版本 | v1 |
 | `DEPLOYMENT_MODE` | 部署环境 | dev |
 | `CONFIG_SOURCE_FILE` | Config Center selector 路径 | 无 |
-| `CONFIG_SOURCE` | 仅本地 `file`；`configcenter` 已废弃 | `file` |
-| `CONFIG_FILE` | `file` 源的路径 | `configs/dev.yml` |
+| `CONFIG_SOURCE` | 仅本地 `file`；`configcenter` 已废弃 | 无 |
+| `CONFIG_FILE` | `file` 源的路径 | 无 |
 | `CONSUL_ENABLED` | 是否向 Consul 注册服务 | false |
 | `CONSUL_ADDR` | Consul 地址（只用于注册发现） | consul.example.com |
 
@@ -241,8 +247,8 @@ make k8s-dev
 
 改这个仓库时有两条硬约束：
 
-1. **任何改动之后 `go build ./...` 与 `go vet ./...` 都要通过。** 模板是所有 feature 都打开的
-   参考实现，它编译得过是「裁剪出来的服务也编译得过」的唯一保障。
+1. **任何改动之后 `go build ./...` 与 `go vet ./...` 都要通过。** 模板源码同时保留所有 feature
+   和候选 adapter，默认装配其中一个；模板自身编译通过后，还要让 CLI 生成矩阵验证各互斥产物。
 2. **挪文件、加依赖要同步改 `.co/manifest.yaml`。** CLI 里不写死任何路径，两边的契约只有这一份。
 
 ### `+co:` 标记
@@ -252,8 +258,8 @@ make k8s-dev
 ```go
 var Module = fx.Provide(
     NewData,
-    NewRedisClient,         // +co:redis
-    NewElasticSearchClient, // 全文检索 +co:elasticsearch
+    NewRedisClient,   // +co:redis
+    NewSearchCatalog, // +co:elasticsearch|meilisearch
     // +co:anchor data-providers
 )
 
@@ -262,22 +268,22 @@ func NewMinioClient(...) { ... }
 // +co:end
 ```
 
-- **行标记** `// +co:<feature>[,<feature>...]` —— feature 全开时只摘掉标记本身，否则整行删掉。
-  逗号是「与」。标记必须是行尾最后一个 token，前面的说明文字会保留。
-- **块标记** `// +co:begin <feature>` … `// +co:end` —— 可嵌套，两行标记本身也会消失。
+- **行标记** `// +co:<feature-expression>` —— feature 表达式成立时只摘掉标记本身，否则整行删掉。
+  逗号是「与」，竖线是「或」；`elasticsearch|meilisearch` 表示任一项启用。标记必须是行尾最后一个 token。
+- **块标记** `// +co:begin <feature-expression>` … `// +co:end` —— 可嵌套，两行标记本身也会消失。
 - **锚点** `// +co:anchor <name>` —— 插入点，裁剪后**保留**，留给 `co resource add`。
 
 YAML / Makefile / Dockerfile / `.gitignore` 用 `#`，SQL 用 `--`，语义完全相同。
 
-`.proto` 刻意**不参与**裁剪：protoc 会把注释原样搬进生成的 Go 文件，还会把行尾注释挪到别的
-字段上，`begin`/`end` 的配对关系在生成物里会断掉。conf 里多一个用不上的 message 是无害的。
+`.proto` 刻意**不参与**裁剪：protoc 会移动注释，`begin`/`end` 的配对关系在生成物里会断掉。
+因此互斥实现共用 vendor-neutral `Search.Catalog` 配置，不把任一厂商的 message 留在另一种生成物中。
 
 ### 本地验证 CLI 的裁剪结果
 
 改完模板不必先 push：
 
 ```bash
-co new demo --template-dir ../go-connect-template --module github.com/acme/demo --yes
+co new demo --template-dir ../go-connect-template --module github.com/acme/demo --search meilisearch --yes
 cd demo && go build ./...
 ```
 

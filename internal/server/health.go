@@ -18,9 +18,9 @@ func healthStatus(ctx context.Context, deps *data.Data) HealthStatus {
 	// 每个依赖一个独立检查项:整体 healthy 为 false 时,details 里能直接看出是哪一个挂了,
 	// 不用再翻日志。带 +co: 标记的行会被 co-cli 按所选 feature 裁掉。
 	checks := map[string]func(context.Context) error{
-		"postgres":      deps.CheckDatabase,
-		"redis":         deps.CheckCache,         // +co:redis
-		"elasticSearch": deps.CheckElasticSearch, // +co:elasticsearch
+		"postgres": deps.CheckDatabase,
+		"redis":    deps.CheckCache,  // +co:redis
+		"search":   deps.CheckSearch, // +co:elasticsearch|meilisearch
 	}
 
 	for name, check := range checks {

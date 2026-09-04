@@ -93,13 +93,12 @@ discovery:
       ca_pem: ""
 # +co:end
 
-# +co:begin elasticsearch
+# +co:begin elasticsearch|meilisearch
 search:
-  elastic_search:
-    addresses:
-      - "http://elasticsearch.pre.svc.cluster.local:9200"
-    username: "elastic"
-    password: "REPLACE_ME"
+  catalog:
+    endpoint: "http://search.pre.svc.cluster.local:9200"
+    # Basic Auth / API key 由 Config Center 或 Secret 注入,不写入仓库。
+    index: "products"
     tls:
       enable: false
       insecure_skip_verify: false
@@ -116,7 +115,7 @@ log:
     error_level: error
     format: json
   # +co:begin elasticsearch
-  elasticsearch:
+  search:
     enable_request: false
     enable_response: false
   # +co:end

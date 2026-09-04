@@ -30,8 +30,9 @@ dev: dev-file
 # 连不上服务直接退出。先起本地依赖:
 #   docker compose -f infrastructure/postgres/compose.yaml up -d
 #   docker compose -f infrastructure/redis/compose.yaml up -d
-# elasticsearch 可选(连不上只在 /healthz 里显示不健康),要用检索再起:
-#   docker compose -f infrastructure/elasticsearch/compose.yaml up -d
+# 检索后端可选(连不上只在 /healthz 里显示不健康),要用检索再起所选 adapter:
+#   docker compose -f infrastructure/elasticsearch/compose.yaml up -d # +co:elasticsearch
+#   docker compose -f infrastructure/meilisearch/compose.yaml up -d # +co:meilisearch
 # 凭据已经和 configs/dev.yml 对好,不用改任何配置;建表 DDL 由 postgres 那份
 # compose 在库初始化时自动跑,也不用手动灌。
 .PHONY: dev-file

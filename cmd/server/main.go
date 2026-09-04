@@ -8,14 +8,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/lens077/go-connect-kit/env"
+	"github.com/lens077/go-connect-kit/meta"
+	kitregistry "github.com/lens077/go-connect-kit/registry" // +co:consul
 	"github.com/lens077/go-connect-template/constants"
 	"github.com/lens077/go-connect-template/internal/biz"
 	confv1 "github.com/lens077/go-connect-template/internal/conf/v1"
 	"github.com/lens077/go-connect-template/internal/data"
 	"github.com/lens077/go-connect-template/internal/pkg/config"
-	"github.com/lens077/go-connect-template/internal/pkg/env"
 	logger "github.com/lens077/go-connect-template/internal/pkg/log"
-	"github.com/lens077/go-connect-template/internal/pkg/meta"
 	"github.com/lens077/go-connect-template/internal/pkg/otel"
 	"github.com/lens077/go-connect-template/internal/pkg/registry" // +co:consul
 	"github.com/lens077/go-connect-template/internal/server"
@@ -84,12 +85,6 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 		registry.Module, // 服务注册/发现 +co:consul
 
 		// 可观测性 - 根据配置决定是否启用
-		fx.Provide(func(conf *confv1.Bootstrap) *confv1.Observability {
-			if conf.Observability == nil {
-				return &confv1.Observability{Enable: false}
-			}
-			return conf.Observability
-		}),
 		otel.Module,
 
 		// 注入业务模块（按依赖顺序）
@@ -106,7 +101,7 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 		fx.Invoke(
 			// 启动之前初始化 Consul 注册中心
 			// +co:begin consul
-			func(reg *registry.ConsulRegistry, logger *zap.Logger) {
+			func(reg *kitregistry.ConsulRegistry, logger *zap.Logger) {
 				if reg != nil {
 					logger.Info("consul service discovery component lifecycle successfully initialized")
 				}
@@ -114,14 +109,14 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 			// +co:end
 
 			// 初始化并启动核心应用逻辑
-			func(lc fx.Lifecycle, conf *confv1.Bootstrap, d *data.Data, logger *zap.Logger, srv *http.Server, otelShutdown func(context.Context) error) {
+			func(lc fx.Lifecycle, conf *confv1.Bootstrap, live *config.Live, d *data.Data, logger *zap.Logger, srv *http.Server, otelShutdown func(context.Context) error) {
 				lc.Append(fx.Hook{
 					// 启动服务时的操作
 					OnStart: func(ctx context.Context) error {
 						// 打出配置源:线上排查「为什么读到的是旧配置」时,
 						// 第一件事就是确认这份配置到底来自文件还是 Consul
 						logger.Info("performing startup health checks...",
-							zap.String("configSource", config.SourceName()),
+							zap.String("configSource", live.SourceName()),
 						)
 
 						// 检查数据库
@@ -134,15 +129,10 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 							return err
 						}
 						// +co:end
-						// 检查 Elasticsearch。
-						//
-						// 这里只告警、不返回错误:ES 是可降级依赖,挂了业务顶多是搜不到,
-						// 而 postgres/redis 挂了任何请求都做不成。拿它拦住启动等于让整个
-						// 服务陪一个可选组件一起躺下,本地开发时还会变成「想跑起来就必须
-						// 先起一个 ES」。连通性由 /healthz 的 elasticSearch 项持续暴露。
-						// +co:begin elasticsearch
-						if err := d.CheckElasticSearch(ctx); err != nil {
-							logger.Warn("elasticsearch unreachable, search will degrade", zap.Error(err))
+						// 检索后端是可降级依赖:连不上只让搜索不可用,不阻塞其它业务启动。
+						// +co:begin elasticsearch|meilisearch
+						if err := d.CheckSearch(ctx); err != nil {
+							logger.Warn("search catalog unreachable, search will degrade", zap.Error(err))
 						}
 						// +co:end
 

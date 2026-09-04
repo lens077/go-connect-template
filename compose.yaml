@@ -4,7 +4,7 @@
 # <服务名>-service;.co/manifest.yaml 的 placeholders.service_name 就是它。
 # 手工从模板起项目时自己改掉。
 #
-# 本地依赖(postgres/redis/elasticsearch)不在这份文件里,各自一份:
+# 本地依赖(postgres/redis/所选检索后端)不在这份文件里,各自一份:
 # infrastructure/<组件>/compose.yaml。分开是为了让「只想起个库」不必连带
 # 起一个还没构建出来的服务镜像。
 services:
