@@ -141,3 +141,8 @@
 - [x] 已发布 kit `v0.3.0` 和 control-tower `v0.1.4`；`GOWORK=off` 独立 tidy/build/test 通过并刷新 `go.sum`
 
 这条链路不使用 BSR。BSR 分发 proto，不分发 Go 实现。
+
+### 15. CI 与首个发布
+
+- [x] 新增 `.github/workflows/ci.yml`：push main / `v*` tag / PR / `workflow_dispatch` 触发，跑 `go test ./...` 与 `go vet ./...`
+- [x] 打首个发布 tag `v0.1.0`，供 CLI `--template-ref` 钉住模板版本
