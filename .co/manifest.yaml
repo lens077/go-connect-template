@@ -1,4 +1,6 @@
-# co-cli 的裁剪清单。
+# co-cli 的裁剪清单。manifest version 3,需要 co >= v0.2.0。
+# 旧 co 会在这里报「field exclude not found」—— 那不是模板写错了,是 co 太旧:
+#   go install github.com/lens077/go-connect-template-cli@latest
 #
 # 这个目录以 . 开头,Go 工具链会整个忽略,所以它不参与 go build ./... ——
 # 模板仓库自身保留所有 feature 源码并能编译;互斥 adapter 按默认项装配,

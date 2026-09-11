@@ -7,6 +7,7 @@
 删 `go.mod` 依赖）。所以这里编译得过，裁剪出来的服务就编译得过。
 
 ```bash
+go install github.com/lens077/go-connect-template-cli@latest   # 需要 co >= v0.2.0(manifest v3)
 co new cart --module github.com/acme/shop --yes
 ```
 
