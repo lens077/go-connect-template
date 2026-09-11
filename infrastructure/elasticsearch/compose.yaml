@@ -1,5 +1,5 @@
 # 本地开发用的单节点 Elasticsearch。凭据与 configs/dev.yml 里的
-# search.elastic_search 一致,起来就能直接 make dev。
+# search.catalog 一致,起来就能直接 make dev。
 #
 # 镜像大版本必须跟 go.mod 里的客户端对齐(现在是 go-elasticsearch/v9 → 9.x):
 # v9 客户端会发 `Accept: application/vnd.elasticsearch+json; compatible-with=9`,
@@ -26,7 +26,9 @@ services:
       # 本地限制堆大小,默认会按物理内存的一半来要,笔记本上很容易把内存吃光
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     healthcheck:
-      test: [ "CMD-SHELL", "curl -sf -u elastic:devpassword http://localhost:9200/_cluster/health || exit 1" ]
+      # 用 127.0.0.1 而不是 localhost:镜像里 localhost 解析成 ::1,只监听 IPv4 的服务会 refused。
+      # ES 双栈监听 [::] 所以 localhost 碰巧能通,但探活不该依赖服务端监听策略,统一走 IPv4。
+      test: [ "CMD-SHELL", "curl -sf -u elastic:devpassword http://127.0.0.1:9200/_cluster/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 12

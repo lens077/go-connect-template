@@ -8,14 +8,15 @@ require (
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/otelconnect v0.9.0
 	connectrpc.com/validate v0.6.0
+	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/casdoor/casdoor-go-sdk v1.46.0
 	github.com/elastic/elastic-transport-go/v8 v8.11.0
 	github.com/elastic/go-elasticsearch/v9 v9.5.1
 	github.com/exaring/otelpgx v0.11.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/lens077/control-tower v0.1.4
-	github.com/lens077/go-connect-kit v0.3.0
+	github.com/lens077/control-tower v0.1.6
+	github.com/lens077/go-connect-kit v0.4.3
 	github.com/meilisearch/meilisearch-go v0.36.3
 	github.com/redis/go-redis/v9 v9.22.0
 	github.com/rs/cors v1.11.1
@@ -72,6 +73,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spf13/viper v1.21.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.20.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.70.0 // indirect

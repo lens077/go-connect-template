@@ -7,10 +7,16 @@
 # 只做减法是刻意的。老版 CLI 用正则去改写克隆下来的源码,模板一改格式就静默失效;
 # 而删除的正确性能被模板仓库自己的 CI 兜住 —— 只要模板编译得过,留下的部分就编译得过。
 
-version: 2
+version: 3
 
 # 模板自身的 module 路径。生成时全量替换为目标 module(唯一串,替换安全)。
 module: github.com/lens077/go-connect-template
+
+# 模板自身的元数据,任何生成物都不要。精确路径,不支持 glob;
+# 不得与任何 feature 的 files 或 example.keep 重叠(那是写矛盾了,CLI 加载即报错)。
+# .git 与 .co/ 由 CLI 天然跳过,不用写在这里。
+exclude:
+  - TODO.md   # 模板的改造记录:「Meilisearch 二选一」「kit 收敛」对 cart 服务毫无意义
 
 # 模板里 SERVICE_NAME 之类的占位默认值,生成时按服务名替换
 placeholders:
@@ -89,6 +95,7 @@ features:
     default: true
     files:
       - internal/data/db_postgres.go
+      - internal/data/db_postgres_test.go
       - sqlc.yaml
       - infrastructure/postgres/compose.yaml
     requires:
@@ -104,10 +111,13 @@ features:
     default: true
     files:
       - internal/data/cache_redis.go
+      - internal/data/cache_redis_test.go
       - infrastructure/redis/compose.yaml
       - infrastructure/redis/redis.conf
     requires:
       - github.com/redis/go-redis/v9
+      # 只有 adapter 测试用它;adapter 一删,这个 test-only 依赖也得跟着走
+      - github.com/alicebob/miniredis/v2
     dev_compose: infrastructure/redis/compose.yaml
     dev_required: true
 
@@ -116,10 +126,12 @@ features:
     group: search
     default: true
     files:
-      # 两个 adapter 共用的项目内接口。只关掉其中一个时不能删。
+      # 两个 adapter 共用的项目内接口与其测试。只关掉其中一个时不能删。
       - internal/data/search_catalog.go
+      - internal/data/search_catalog_test.go
       - internal/data/search_elasticsearch.go
       - internal/data/search_elasticsearch_log.go
+      - internal/data/search_elasticsearch_test.go
       - infrastructure/elasticsearch/compose.yaml
     requires:
       - github.com/elastic/go-elasticsearch/v9
@@ -135,7 +147,9 @@ features:
     group: search
     files:
       - internal/data/search_catalog.go
+      - internal/data/search_catalog_test.go
       - internal/data/search_meilisearch.go
+      - internal/data/search_meilisearch_test.go
       - infrastructure/meilisearch/compose.yaml
     requires:
       - github.com/meilisearch/meilisearch-go
@@ -147,6 +161,7 @@ features:
     default: true
     files:
       - internal/data/auth_casdoor.go
+      - internal/data/auth_casdoor_test.go
     requires:
       - github.com/casdoor/casdoor-go-sdk
 
@@ -274,6 +289,11 @@ layouts:
       - third_party
       - okteto.yaml
       - .stignore
+    # 由仓库根提供的 Go 包:删掉服务内副本,导入改写成 <Module>/<pkg>。
+    # 只写进 drop 不够 —— 副本删了,import 仍指向 services/<name>/constants,编译不过;
+    # 不删则每个服务各带一份影子副本,与根上那份(ecommerce/backend/constants)漂移。
+    root_packages:
+      - constants
     # 配置中心源在 monorepo 里是默认设施，由 sibling 仓 control-tower 的
     # configsource adapter 接到 go-connect-kit/config；模板不再生成实现副本。
     features:

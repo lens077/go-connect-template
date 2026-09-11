@@ -17,7 +17,12 @@ co new cart --module github.com/acme/shop --yes
 - **依赖注入**: Uber FX
 - **数据库**: PostgreSQL (pgx/v5 + sqlc)
 - **缓存**: Redis
-- **搜索**: Elasticsearch v9 / Meilisearch（由 `co` 在生成期二选一）
+<!-- +co:begin elasticsearch -->
+- **搜索**: Elasticsearch v9
+<!-- +co:end -->
+<!-- +co:begin meilisearch -->
+- **搜索**: Meilisearch
+<!-- +co:end -->
 - **身份认证**: Casdoor
 - **服务发现**: Consul
 - **可观测性**: OpenTelemetry
@@ -49,8 +54,8 @@ co new cart --module github.com/acme/shop --yes
 │   │   ├── db_postgres.go      #   PostgreSQL（含 TLS / verify-ca）
 │   │   ├── cache_redis.go      #   Redis
 │   │   ├── search_catalog.go       #   项目自有 interface 与 DTO
-│   │   ├── search_elasticsearch.go #   生成期候选 adapter
-│   │   ├── search_meilisearch.go   #   生成期候选 adapter
+│   │   ├── search_elasticsearch.go #   检索 adapter <!-- +co:elasticsearch -->
+│   │   ├── search_meilisearch.go   #   检索 adapter <!-- +co:meilisearch -->
 │   │   ├── auth_casdoor.go
 │   │   ├── migrations/             #   建表 DDL，000NN_ 前缀决定 sqlc 的读取顺序
 │   │   ├── queries/            #   sqlc 查询
@@ -96,22 +101,38 @@ co new cart --module github.com/acme/shop --yes
 # postgres 与 redis 是启动硬依赖：连不上服务不会起来
 docker compose -f infrastructure/postgres/compose.yaml up -d
 docker compose -f infrastructure/redis/compose.yaml up -d
-
-# 检索后端可选，二选一；连不上只让检索功能降级
-docker compose -f infrastructure/elasticsearch/compose.yaml up -d
-# 或
-docker compose -f infrastructure/meilisearch/compose.yaml up -d
 ```
 
-`co new --search elasticsearch` 与 `co new --search meilisearch` 是**生成期选择**，不是运行时开关。
-生成物只保留所选 adapter 的 Go 文件、依赖与 compose；仓储层统一通过项目自有的
-`SearchCatalog` interface 调用，不接触厂商 SDK 类型。
+检索后端是可降级依赖：连不上只让检索功能不可用，不阻塞启动。
+
+<!-- +co:begin elasticsearch -->
+```bash
+docker compose -f infrastructure/elasticsearch/compose.yaml up -d
+```
+<!-- +co:end -->
+<!-- +co:begin meilisearch -->
+```bash
+docker compose -f infrastructure/meilisearch/compose.yaml up -d
+```
+<!-- +co:end -->
+
+<!-- +co:begin elasticsearch,meilisearch -->
+模板同时保留两个检索 adapter，`co new --search elasticsearch|meilisearch` 是**生成期选择**，
+不是运行时开关。生成物只保留所选 adapter 的 Go 文件、依赖、compose 与文档段落。
+<!-- +co:end -->
+仓储层统一通过项目自有的 `SearchCatalog` interface 调用检索后端，不接触厂商 SDK 类型。
 
 迁移使用 goose 版本文件，存放在 `internal/data/migrations/`；示例种子存放在
 `internal/data/seeds/`。生产服务必须通过迁移命令升级，不能依赖容器首次启动脚本。
 
+<!-- +co:begin elasticsearch -->
 > Elasticsearch 镜像的大版本必须跟 `go.mod` 里的客户端对齐（现在是 `go-elasticsearch/v9` → Elasticsearch 9.x）。
 > v9 客户端会发 `compatible-with=9` 的 Accept 头，8.x 服务端不认，连 Ping 都返回 400。
+<!-- +co:end -->
+<!-- +co:begin meilisearch -->
+> 本地 Meilisearch 以 `MEILI_ENV=development` 启动、不设 master key，`search.catalog.api_key` 留空即可。
+> 生产环境必须设 master key，并通过 Config Center / Secret 注入 `api_key`。
+<!-- +co:end -->
 
 Consul 的 compose 在 `infrastructure/consul/`，但 `make dev` 用不到它：配置从本地文件读，
 `CONSUL_ENABLED=false` 也不做服务注册。要验注册时再起。
@@ -243,13 +264,24 @@ make k8s-dev
 `internal/data/migrations/` 下的建表 DDL **文件名带 `000NN_` 前缀**：sqlc 按文件名排序读整个目录，
 序号就是建表顺序，后建的表引用先建的表时靠它保证外键建得起来。`co resource add` 会自动接着往下排。
 
+<!-- +co:begin elasticsearch,meilisearch -->
 ## 作为模板库维护
 
 改这个仓库时有两条硬约束：
 
-1. **任何改动之后 `go build ./...` 与 `go vet ./...` 都要通过。** 模板源码同时保留所有 feature
-   和候选 adapter，默认装配其中一个；模板自身编译通过后，还要让 CLI 生成矩阵验证各互斥产物。
+1. **任何改动之后 `go build ./...`、`go vet ./...` 与 `go test ./...` 都要通过。** 模板源码同时保留所有 feature
+   和候选 adapter，默认装配其中一个；模板自身通过后，还要让 CLI 生成矩阵验证各互斥产物（矩阵会对每个产物跑 `go test`）。
 2. **挪文件、加依赖要同步改 `.co/manifest.yaml`。** CLI 里不写死任何路径，两边的契约只有这一份。
+   **测试文件也一样**：`internal/data/*_test.go` 各自登记在所属 feature 的 `files` 下，随 adapter 一起去留；
+   test-only 依赖（如 miniredis）登记在该 feature 的 `requires` 下。
+
+### 生成物自带的测试
+
+- `cmd/server/main_test.go`：`fx.ValidateApp` 校验依赖图闭合。**不带标记，所有生成物都有。**
+  fx 的注入在运行时用反射解析，`go build`/`go vet` 看不见「某构造函数要的参数没人 provide」——
+  曾有一次这类错误让所有生成服务在 fx 构建阶段就起不来，而 CI 全绿。
+- `internal/data/*_test.go`：各 adapter 的契约测试，用 httptest / miniredis 假服务，不依赖外部进程。
+  随 feature 裁剪：选 Elasticsearch 的产物里没有 Meilisearch 的测试，反之亦然。
 
 ### `+co:` 标记
 
@@ -274,6 +306,8 @@ func NewMinioClient(...) { ... }
 - **锚点** `// +co:anchor <name>` —— 插入点，裁剪后**保留**，留给 `co resource add`。
 
 YAML / Makefile / Dockerfile / `.gitignore` 用 `#`，SQL 用 `--`，语义完全相同。
+Markdown 用 HTML 注释 `<!-- +co:... -->`：块标记独占一行，行标记放行尾，必须以 `-->` 闭合。
+渲染时注释不可见，模板 README 照常阅读；生成物只保留所选 adapter 的段落。
 
 `.proto` 刻意**不参与**裁剪：protoc 会移动注释，`begin`/`end` 的配对关系在生成物里会断掉。
 因此互斥实现共用 vendor-neutral `Search.Catalog` 配置，不把任一厂商的 message 留在另一种生成物中。
@@ -286,6 +320,7 @@ YAML / Makefile / Dockerfile / `.gitignore` 用 `#`，SQL 用 `--`，语义完�
 co new demo --template-dir ../go-connect-template --module github.com/acme/demo --search meilisearch --yes
 cd demo && go build ./...
 ```
+<!-- +co:end -->
 
 ## 待办
 

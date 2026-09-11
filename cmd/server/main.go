@@ -64,6 +64,13 @@ func main() {
 
 // NewApp 创建并配置 FX 应用
 func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
+	return fx.New(AppOptions(serviceName, deploymentMode, serviceVersion)...)
+}
+
+// AppOptions 是整个服务的 fx 依赖图。单独抽出来是为了让 main_test.go 能用
+// fx.ValidateApp 校验它:fx 的依赖注入在运行时用反射解析,go build / go vet
+// 看不见「某个构造函数要的参数没人 provide」这类错误,只有真正构建图才会暴露。
+func AppOptions(serviceName, deploymentMode, serviceVersion string) []fx.Option {
 	host, err := meta.GetOutboundIP()
 	if err != nil {
 		zap.Error(err)
@@ -76,7 +83,7 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 		Environment: deploymentMode,
 	}
 
-	return fx.New(
+	return []fx.Option{
 		// 基础模块
 		logger.Module,     // 日志
 		config.Module,     // 配置
@@ -172,5 +179,5 @@ func NewApp(serviceName, deploymentMode, serviceVersion string) *fx.App {
 				})
 			},
 		),
-	)
+	}
 }

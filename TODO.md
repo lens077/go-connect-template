@@ -146,3 +146,23 @@
 
 - [x] 新增 `.github/workflows/ci.yml`：push main / `v*` tag / PR / `workflow_dispatch` 触发，跑 `go test ./...` 与 `go vet ./...`
 - [x] 打首个发布 tag `v0.1.0`，供 CLI `--template-ref` 钉住模板版本
+
+### 16. 真实容器验证与生成物自带测试
+
+- [x] 真实 Meilisearch 容器跑通生成物端到端（EnsureIndex 幂等 / 异步任务 / 覆盖写 / Health / 降级路径）
+- [x] 修 Meilisearch compose healthcheck：镜像里 `localhost` 解析为 `::1`，服务只监听 IPv4，探活永远 refused → 改 `127.0.0.1`
+- [x] 修 `NewConnectOptions` 要 `*confv1.Observability` 而无人 provide：自 `d61ef7b` 起所有生成服务 fx 构建即失败，`go build`/`vet`/CI 全抓不到。改收 `*confv1.Bootstrap`，与 otel/config 一致
+- [x] `cmd/server` 抽 `AppOptions`，`main_test.go` 用 `fx.ValidateApp` 校验依赖图——上一条的回归测试，已验证去掉修复即红
+- [x] adapter 契约测试随 feature 走：ES / Meili（httptest 假服务）、redis（miniredis）、postgres（TLS 装配，不连库）、casdoor（字段映射）；共享 `search_catalog_test.go` 由两个检索 feature 共有
+- [x] `miniredis` 作为 test-only 依赖登记在 `redis.requires`，`--cache none` 时随 adapter 删除
+- [x] README 用 `<!-- +co:x -->` 按 adapter 裁剪；「作为模板库维护」整章只留在模板自身
+- [x] manifest v3 加顶层 `exclude: [TODO.md]`：模板自身元数据不进生成物。精确路径、无 glob、与 feature files / keep 重叠即报错、压过 keep。需要 CLI ≥ 支持 v3 的版本
+- [x] ES compose healthcheck 也改 `127.0.0.1`。真实容器验证：ES 双栈监听 `[::]` 所以 `localhost`（→`::1`）碰巧能通，Meili 只监听 IPv4 就 refused；两份 compose 统一 IPv4，不依赖服务端监听策略
+- [x] ES adapter 也过了真实容器 e2e（Basic Auth / 幂等 / 覆盖写 / spu_code 搜索）；临时测试已删，不入库
+
+### 17. monorepo 根包与 `--keep-example` 接线
+
+- [x] manifest v3 `layouts.monorepo.root_packages: [constants]`：monorepo 下 `constants` 由仓库根提供（`ecommerce/backend/constants`）。CLI 删掉服务内副本并把导入改写为 `<Module>/constants`。此前每个生成服务各带一份影子副本；`co upgrade` 对已清掉副本的服务又会把它报成 added 带回来。只写进 `drop` 不够——副本删了 import 仍指向 `services/<name>/constants`
+- [x] `+co:example` 标记的接线在 `--keep-example` 下也曾被裁掉（`example` 不是 feature，从未进 FeatureSet）：文件留下了，`NewSearchService,` / handler 参数 / 注册块全没了，`go build` 照样绿。修在 CLI 侧（`manifest.ExampleMarker`），模板无需改动
+- [x] 依赖升到已发布的 kit `v0.4.3` / control-tower `v0.1.6`（此前 tag `v0.1.0` 仍 pin kit v0.3.0 / control-tower v0.1.4，与 ecommerce 的 kit 版本打架）。`GOWORK=off` build/vet/test 通过；CLI v0.2.0 生成矩阵在此状态下全绿
+- [x] 打 tag `v0.2.0`：manifest v3 是 contract 变更，需要 CLI ≥ v0.2.0；旧 CLI 拉本 tag 会报「version 3 not supported, upgrade co」
