@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	v1 "{{.Module}}/{{.APIDir}}"
 	"{{.Module}}/{{.APIDir}}/{{.ConnectPkg}}"
 	"{{.ServiceModule}}/internal/biz"
@@ -42,42 +42,43 @@ func New{{.Pascal}}Service(
 	}
 }
 
-func (s *{{.Pascal}}Service) Create{{.Pascal}}(ctx context.Context, req *connect.Request[v1.Create{{.Pascal}}Request]) (*connect.Response[v1.Create{{.Pascal}}Response], error) {
+// connect v2 的 unary 签名:直接收发消息,不再有 connect.Request/Response 泛型包装。
+func (s *{{.Pascal}}Service) Create{{.Pascal}}(ctx context.Context, req *v1.Create{{.Pascal}}Request) (*v1.Create{{.Pascal}}Response, error) {
 	m, err := s.uc.Create(ctx, biz.Create{{.Pascal}}Params{
-		Code:         req.Msg.GetCode(),
-		Name:         req.Msg.GetName(),
-		Description:  req.Msg.GetDescription(),
-		Price:        req.Msg.GetPrice(),
-		Status:       req.Msg.GetStatus(),
-		MainMediaKey: req.Msg.GetMainMediaKey(),
-		Quantity:     req.Msg.GetQuantity(),
+		Code:         req.GetCode(),
+		Name:         req.GetName(),
+		Description:  req.GetDescription(),
+		Price:        req.GetPrice(),
+		Status:       req.GetStatus(),
+		MainMediaKey: req.GetMainMediaKey(),
+		Quantity:     req.GetQuantity(),
 	})
 	if err != nil {
 		return nil, s.toConnectErr(err)
 	}
-	return connect.NewResponse(&v1.Create{{.Pascal}}Response{ {{.Pascal}}: s.to{{.Pascal}}PB(m)}), nil
+	return &v1.Create{{.Pascal}}Response{ {{.Pascal}}: s.to{{.Pascal}}PB(m)}, nil
 }
 
-func (s *{{.Pascal}}Service) Get{{.Pascal}}(ctx context.Context, req *connect.Request[v1.Get{{.Pascal}}Request]) (*connect.Response[v1.Get{{.Pascal}}Response], error) {
-	m, err := s.uc.Get(ctx, req.Msg.GetId())
+func (s *{{.Pascal}}Service) Get{{.Pascal}}(ctx context.Context, req *v1.Get{{.Pascal}}Request) (*v1.Get{{.Pascal}}Response, error) {
+	m, err := s.uc.Get(ctx, req.GetId())
 	if err != nil {
 		return nil, s.toConnectErr(err)
 	}
-	return connect.NewResponse(&v1.Get{{.Pascal}}Response{ {{.Pascal}}: s.to{{.Pascal}}PB(m)}), nil
+	return &v1.Get{{.Pascal}}Response{ {{.Pascal}}: s.to{{.Pascal}}PB(m)}, nil
 }
 
-func (s *{{.Pascal}}Service) List{{.PascalPlural}}(ctx context.Context, req *connect.Request[v1.List{{.PascalPlural}}Request]) (*connect.Response[v1.List{{.PascalPlural}}Response], error) {
-	params := biz.List{{.Pascal}}Params{PageSize: req.Msg.GetPageSize()}
+func (s *{{.Pascal}}Service) List{{.PascalPlural}}(ctx context.Context, req *v1.List{{.PascalPlural}}Request) (*v1.List{{.PascalPlural}}Response, error) {
+	params := biz.List{{.Pascal}}Params{PageSize: req.GetPageSize()}
 
 	// 空串表示不过滤:proto3 的标量分不清「没传」和「传了空串」,
 	// 这里按「空串 = 不过滤」约定,与 List 的语义一致
-	if status := req.Msg.GetStatus(); status != "" {
+	if status := req.GetStatus(); status != "" {
 		params.Status = &status
 	}
-	if ts := req.Msg.GetCursorCreatedAt(); ts != nil {
+	if ts := req.GetCursorCreatedAt(); ts != nil {
 		t := ts.AsTime()
 		params.CursorCreatedAt = &t
-		id := req.Msg.GetCursorId()
+		id := req.GetCursorId()
 		params.CursorID = &id
 	}
 
@@ -102,45 +103,47 @@ func (s *{{.Pascal}}Service) List{{.PascalPlural}}(ctx context.Context, req *con
 		resp.NextCursorId = last.ID
 	}
 
-	return connect.NewResponse(resp), nil
+	return resp, nil
 }
 
-func (s *{{.Pascal}}Service) Update{{.Pascal}}(ctx context.Context, req *connect.Request[v1.Update{{.Pascal}}Request]) (*connect.Response[v1.Update{{.Pascal}}Response], error) {
+func (s *{{.Pascal}}Service) Update{{.Pascal}}(ctx context.Context, req *v1.Update{{.Pascal}}Request) (*v1.Update{{.Pascal}}Response, error) {
 	// proto 的 optional 字段直接就是指针,原样透传给 biz —— nil 表示不改。
 	// 不要在这里用 Get 系列取值,那会把「不改」变成「改成零值」。
 	m, err := s.uc.Update(ctx, biz.Update{{.Pascal}}Params{
-		ID:           req.Msg.GetId(),
-		Name:         req.Msg.Name,
-		Description:  req.Msg.Description,
-		Price:        req.Msg.Price,
-		Status:       req.Msg.Status,
-		MainMediaKey: req.Msg.MainMediaKey,
-		Quantity:     req.Msg.Quantity,
+		ID:           req.GetId(),
+		Name:         req.Name,
+		Description:  req.Description,
+		Price:        req.Price,
+		Status:       req.Status,
+		MainMediaKey: req.MainMediaKey,
+		Quantity:     req.Quantity,
 	})
 	if err != nil {
 		return nil, s.toConnectErr(err)
 	}
-	return connect.NewResponse(&v1.Update{{.Pascal}}Response{ {{.Pascal}}: s.to{{.Pascal}}PB(m)}), nil
+	return &v1.Update{{.Pascal}}Response{ {{.Pascal}}: s.to{{.Pascal}}PB(m)}, nil
 }
 
-func (s *{{.Pascal}}Service) Delete{{.Pascal}}(ctx context.Context, req *connect.Request[v1.Delete{{.Pascal}}Request]) (*connect.Response[v1.Delete{{.Pascal}}Response], error) {
-	deleted, err := s.uc.Delete(ctx, req.Msg.GetId())
+func (s *{{.Pascal}}Service) Delete{{.Pascal}}(ctx context.Context, req *v1.Delete{{.Pascal}}Request) (*v1.Delete{{.Pascal}}Response, error) {
+	deleted, err := s.uc.Delete(ctx, req.GetId())
 	if err != nil {
 		return nil, s.toConnectErr(err)
 	}
-	return connect.NewResponse(&v1.Delete{{.Pascal}}Response{Deleted: deleted}), nil
+	return &v1.Delete{{.Pascal}}Response{Deleted: deleted}, nil
 }
 
 // toConnectErr 把领域错误映射成 connect 状态码。
 // 认不出来的错误一律 Internal 且不回传原文:数据库报错里常带表名、列名甚至参数值。
+// v2 的 NewError 收公开 message 字符串;WithCause 把原链留在服务端,
+// errors.Is 归因与 rpcobs 的业务 reason 都靠它。
 func (s *{{.Pascal}}Service) toConnectErr(err error) error {
 	switch {
 	case errors.Is(err, biz.Err{{.Pascal}}NotFound):
-		return connect.NewError(connect.CodeNotFound, err)
+		return connect.NewError(connect.CodeNotFound, err.Error()).WithCause(err)
 	case errors.Is(err, biz.Err{{.Pascal}}AlreadyExists):
-		return connect.NewError(connect.CodeAlreadyExists, err)
+		return connect.NewError(connect.CodeAlreadyExists, err.Error()).WithCause(err)
 	default:
-		return connect.NewError(connect.CodeInternal, errors.New("internal error"))
+		return connect.NewError(connect.CodeInternal, "internal error")
 	}
 }
 

@@ -42,12 +42,16 @@ func NewHTTPServer(
 	// per-handler 选项(v1 逐 handler 复制选项切片,漏一步就「只有最后一个
 	// 服务带拦截器」);HTTP 绑定经 connecthttp.Mount,默认按 content-type
 	// 在同一端口协商 Connect/gRPC/gRPC-Web 三种协议。
-	// +co:begin example
+	// NewServer 的拦截器对 Server 上全部服务生效。注意顺序:所有 Register
+	// 都必须在 Mount 之前 —— Mount 按 Server 当前的过程表装配 HTTP 路由,
+	// 后注册的过程不再被路由。co resource add / proto gen 插的注册行走
+	// server-handler-register 锚点,正好落在 Mount 之前。
 	server := connect.NewServer(interceptors...)
+	// +co:begin example
 	searchv1connect.RegisterSearchServiceHandler(server, searchv1Service)
-	connecthttp.Mount(mux, server)
 	// +co:end
 	// +co:anchor server-handler-register
+	connecthttp.Mount(mux, server)
 
 	// 应用本身的健康检查
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
