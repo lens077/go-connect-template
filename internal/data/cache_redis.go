@@ -98,17 +98,17 @@ func NewRedisClient(lc fx.Lifecycle, cfg *conf.Bootstrap, logger *zap.Logger) (*
 
 // Redis 返回底层客户端,供仓储层直接使用
 func (d *Data) Redis() *redis.Client {
-	return d.rdb
+	return d.rdb.Client()
 }
 
 // CheckCache 检查缓存连通性
 func (d *Data) CheckCache(ctx context.Context) error {
-	if d.rdb == nil {
+	if d.rdb == nil || d.rdb.Client() == nil {
 		return fmt.Errorf("redis client not initialized")
 	}
 	ctx, cancel := context.WithTimeout(ctx, constants.DefaultHealthCheckTimeout)
 	defer cancel()
-	if err := d.rdb.Ping(ctx).Err(); err != nil {
+	if err := d.rdb.Client().Ping(ctx).Err(); err != nil {
 		return fmt.Errorf("cache ping failed: %w", err)
 	}
 	return nil

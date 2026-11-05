@@ -6,10 +6,8 @@ import (
 
 	"github.com/casdoor/casdoor-go-sdk/casdoorsdk" // +co:casdoor
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lens077/go-connect-kit/dbutil"
 	"github.com/lens077/go-connect-template/constants"
-	"github.com/redis/go-redis/v9" // +co:redis
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
@@ -26,7 +24,9 @@ var Module = fx.Module("data",
 	fx.Provide(
 		NewData,
 		NewPostgresPool,
+		NewPgPool,
 		NewRedisClient,       // +co:redis
+		NewLiveRedis,         // +co:redis
 		NewCasdoorAuthClient, // +co:casdoor
 		// 检索 adapter 是生成期互斥项,生成物只会留下一个实现。
 		NewSearchCatalog, // +co:elasticsearch|meilisearch
@@ -37,8 +37,8 @@ var Module = fx.Module("data",
 
 // Data 持有所有数据源的客户端
 type Data struct {
-	db           *pgxpool.Pool
-	rdb          *redis.Client      // +co:redis
+	db           *PgPool
+	rdb          *LiveRedis         // +co:redis
 	auth         *casdoorsdk.Client // +co:casdoor
 	catalog      SearchCatalog      // +co:elasticsearch|meilisearch
 	dbErrHandler *dbutil.Handler
@@ -47,8 +47,8 @@ type Data struct {
 
 // NewData 是 Data 的构造函数
 func NewData(
-	db *pgxpool.Pool,
-	rdb *redis.Client, // +co:redis
+	db *PgPool,
+	rdb *LiveRedis, // +co:redis
 	auth *casdoorsdk.Client, // +co:casdoor
 	catalog SearchCatalog, // +co:elasticsearch|meilisearch
 	logger *zap.Logger,
@@ -81,7 +81,7 @@ func NewData(
 func (d *Data) CheckDatabase(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, constants.DefaultHealthCheckTimeout)
 	defer cancel()
-	if err := d.db.Ping(ctx); err != nil {
+	if err := d.db.Pool().Ping(ctx); err != nil {
 		return fmt.Errorf("database ping failed: %w", err)
 	}
 	return nil

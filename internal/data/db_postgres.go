@@ -63,7 +63,7 @@ func (d *Data) ExecTx(ctx context.Context, fn func(context.Context) error) error
 	}
 
 	d.log.Debug("begin transaction")
-	tx, err := d.db.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := d.db.Pool().BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin tx failed: %w", err)
 	}

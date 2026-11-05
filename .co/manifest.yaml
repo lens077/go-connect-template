@@ -98,6 +98,7 @@ features:
     files:
       - internal/data/db_postgres.go
       - internal/data/db_postgres_test.go
+      - internal/data/live.go
       - sqlc.yaml
       - infrastructure/postgres/compose.yaml
     requires:
@@ -114,6 +115,7 @@ features:
     files:
       - internal/data/cache_redis.go
       - internal/data/cache_redis_test.go
+      - internal/data/live_redis.go
       - infrastructure/redis/compose.yaml
       - infrastructure/redis/redis.conf
     requires:
