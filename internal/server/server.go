@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	connectcors "connectrpc.com/cors"
-	"connectrpc.com/validate"
 	"github.com/lens077/go-connect-template/api/search/v1/searchv1connect" // +co:example
 	// +co:anchor server-imports
 	conf "github.com/lens077/go-connect-template/internal/conf/v1"
@@ -32,19 +32,20 @@ func NewHTTPServer(
 	searchv1Service searchv1connect.SearchServiceHandler, // +co:example
 	// +co:anchor server-handler-params
 	logger *zap.Logger,
-	connectOptions []connect.HandlerOption,
+	interceptors []connect.ServerInterceptor,
 	deps *data.Data, // 基础设施依赖
 ) *http.Server {
 
 	mux := http.NewServeMux()
 
-	// 注册 Connect 业务处理器
+	// connect v2:拦截器挂在 Server 上,对 Server 上全部服务生效,不再有
+	// per-handler 选项(v1 逐 handler 复制选项切片,漏一步就「只有最后一个
+	// 服务带拦截器」);HTTP 绑定经 connecthttp.Mount,默认按 content-type
+	// 在同一端口协商 Connect/gRPC/gRPC-Web 三种协议。
 	// +co:begin example
-	searchv1connectPath, searchv1connectHandler := searchv1connect.NewSearchServiceHandler(
-		searchv1Service,
-		handlerOptions(connectOptions)...,
-	)
-	mux.Handle(searchv1connectPath, searchv1connectHandler)
+	server := connect.NewServer(interceptors...)
+	searchv1connect.RegisterSearchServiceHandler(server, searchv1Service)
+	connecthttp.Mount(mux, server)
 	// +co:end
 	// +co:anchor server-handler-register
 
@@ -66,7 +67,7 @@ func NewHTTPServer(
 	// 使用 h2c 包装处理器，支持同时处理 HTTP/1.1 和 HTTP/2
 	handlerChain = h2c.NewHandler(handlerChain, h2s)
 
-	server := &http.Server{
+	httpServer := &http.Server{
 		Addr:         cfg.Server.Addr,
 		Handler:      handlerChain,
 		ReadTimeout:  cfg.Server.Http.ReadTimeout.AsDuration(),
@@ -84,26 +85,11 @@ func NewHTTPServer(
 		},
 		OnStop: func(ctx context.Context) error {
 			logger.Info("http server shutting down...")
-			return server.Shutdown(ctx)
+			return httpServer.Shutdown(ctx)
 		},
 	})
 
-	return server
-}
-
-// handlerOptions 返回注册 Connect handler 用的选项:全局选项 + validate 拦截器。
-//
-// 写成函数而不是 NewHTTPServer 里的一个局部变量,是为了让「一个 handler 都不注册」
-// 的骨架也编译得过 —— 未使用的局部变量是编译错误,未使用的函数不是。
-// co new --no-resource 生成的正是这种骨架。
-//
-// 每次调用复制一份,不直接 append 调用方那个切片:多个 handler 各 append 一次
-// 同一个底层数组时会互相覆盖最后一格,表现为「只有最后注册的那个服务带上了
-// validate 拦截器」,而且不报错。
-func handlerOptions(base []connect.HandlerOption) []connect.HandlerOption {
-	out := make([]connect.HandlerOption, 0, len(base)+1)
-	out = append(out, base...)
-	return append(out, connect.WithInterceptors(validate.NewInterceptor()))
+	return httpServer
 }
 
 // withCORS 为处理器添加跨域支持

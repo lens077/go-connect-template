@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 
-	"connectrpc.com/connect"
 	v1 "github.com/lens077/go-connect-template/api/search/v1"
 	"github.com/lens077/go-connect-template/api/search/v1/searchv1connect"
 	"github.com/lens077/go-connect-template/internal/biz"
@@ -19,11 +18,12 @@ func NewSearchService(uc *biz.SearchUseCase) searchv1connect.SearchServiceHandle
 	return &SearchService{uc: uc}
 }
 
-func (s *SearchService) Search(ctx context.Context, c *connect.Request[v1.SearchRequest]) (*connect.Response[v1.SearchResponse], error) {
+// Search 是 connect v2 的 unary 签名:请求/响应不再包泛型包装,与 gRPC-Go 同形。
+func (s *SearchService) Search(ctx context.Context, req *v1.SearchRequest) (*v1.SearchResponse, error) {
 	// 1. 调用业务逻辑层
 	result, err := s.uc.Search(ctx, biz.SearchRequest{
-		Index: c.Msg.Index,
-		Name:  c.Msg.Name,
+		Index: req.Index,
+		Name:  req.Name,
 	})
 	if err != nil {
 		return nil, err
@@ -36,9 +36,9 @@ func (s *SearchService) Search(ctx context.Context, c *connect.Request[v1.Search
 	}
 
 	// 3. 返回响应
-	return connect.NewResponse(&v1.SearchResponse{
+	return &v1.SearchResponse{
 		Products: v1Products,
-	}), nil
+	}, nil
 }
 
 // 转换逻辑封装
