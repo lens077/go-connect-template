@@ -18,7 +18,7 @@ var Module = kitconfig.Module[*confv1.Bootstrap](
 )
 
 func newSource() (kitconfig.Source, error) {
-	var selector kitconfig.SelectorFactory
+	var selector kitconfig.SelectorFactory //nolint:staticcheck // S1021: +co 锚点要求 var 与赋值分离，功能关闭时删除赋值行仍需编译通过
 	// +co:begin config-configcenter
 	selector = controlsource.NewKitSource
 	// +co:end

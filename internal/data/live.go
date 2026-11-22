@@ -3,15 +3,11 @@ package data
 import (
 	"context"
 	"sync/atomic"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-// drainTimeout gives in-flight requests time to finish after a client swap.
-const drainTimeout = 30 * time.Second
 
 // PgPool is a stable handle whose underlying pool can be replaced after a
 // configuration update. It also implements sqlc's DBTX interface.

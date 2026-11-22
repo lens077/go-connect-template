@@ -15,8 +15,6 @@ import (
 	"github.com/rs/cors"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 var Module = fx.Module("server",
@@ -60,16 +58,11 @@ func NewHTTPServer(
 		if !status.Healthy {
 			w.WriteHeader(http.StatusServiceUnavailable)
 		}
-		json.NewEncoder(w).Encode(status)
+		_ = json.NewEncoder(w).Encode(status) // 写响应失败无补救手段，显式忽略
 	})
 
 	// 构建处理器链
 	handlerChain := withCORS(mux, cfg.Server.Cors.AllowedOrigins)
-
-	// 配置 HTTP/2 (H2C - 明文 HTTP/2)
-	h2s := &http2.Server{}
-	// 使用 h2c 包装处理器，支持同时处理 HTTP/1.1 和 HTTP/2
-	handlerChain = h2c.NewHandler(handlerChain, h2s)
 
 	httpServer := &http.Server{
 		Addr:         cfg.Server.Addr,
@@ -78,6 +71,13 @@ func NewHTTPServer(
 		WriteTimeout: cfg.Server.Http.WriteTimeout.AsDuration(),
 		IdleTimeout:  cfg.Server.Http.IdleTimeout.AsDuration(),
 	}
+
+	// 明文 HTTP/2（H2C，gRPC/Connect 明文直连必需）：h2c 包已弃用，
+	// Go 1.24 起改用 Server.Protocols。Protocols 零值是空集，须显式启用
+	// HTTP/1.1 与明文 HTTP/2（等价原 h2c.NewHandler 行为，经 curl 冒烟验证）。
+	httpServer.Protocols = new(http.Protocols)
+	httpServer.Protocols.SetHTTP1(true)
+	httpServer.Protocols.SetUnencryptedHTTP2(true)
 
 	// 注册 Fx 生命周期
 	lc.Append(fx.Hook{
