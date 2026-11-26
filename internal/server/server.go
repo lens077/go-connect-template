@@ -10,6 +10,8 @@ import (
 	connectcors "connectrpc.com/cors"
 	"github.com/lens077/go-connect-template/api/search/v1/searchv1connect" // +co:example
 	// +co:anchor server-imports
+	"github.com/lens077/go-connect-kit/meta"
+	sharedotel "github.com/lens077/go-connect-kit/otel"
 	conf "github.com/lens077/go-connect-template/internal/conf/v1"
 	"github.com/lens077/go-connect-template/internal/data"
 	"github.com/rs/cors"
@@ -34,6 +36,7 @@ func NewHTTPServer(
 	logger *zap.Logger,
 	interceptors []connect.ServerInterceptor,
 	deps *data.Data, // 基础设施依赖
+	info meta.AppInfo,
 ) *http.Server {
 
 	mux := http.NewServeMux()
@@ -65,6 +68,9 @@ func NewHTTPServer(
 
 	// 构建处理器链
 	handlerChain := withCORS(mux, cfg.Server.Cors.AllowedOrigins)
+	// OTel 在 h2c 之前包一层，看到协议升级前的原始 HTTP 请求。
+	// helper 内部统一排除 /healthz 探针，operation 用服务名保证各服务可区分。
+	handlerChain = sharedotel.InstrumentHTTP(handlerChain, info.Name+"-server")
 
 	// 配置 HTTP/2 (H2C - 明文 HTTP/2)
 	h2s := &http2.Server{}
